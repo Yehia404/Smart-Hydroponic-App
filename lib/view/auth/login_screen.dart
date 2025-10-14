@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../dashboard/dashboard_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,6 +12,19 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  void _login() {
+    if (_emailController.text == "yehia" && _passwordController.text == "123") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid email or password')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: const InputDecoration(labelText: 'Password'),
                   ),
                   const SizedBox(height: 30),
-                  ElevatedButton(onPressed: () {}, child: const Text('Login')),
+                  ElevatedButton(
+                    onPressed: () {
+                      _login();
+                    },
+                    child: const Text('Login'),
+                  ),
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {},
@@ -53,7 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegistrationScreen(),
+                            ),
+                          );
+                        },
                         child: const Text('Sign Up'),
                       ),
                     ],
