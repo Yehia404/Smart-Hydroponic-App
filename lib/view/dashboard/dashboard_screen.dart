@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'sensor_monitoring_screen.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -13,6 +13,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Placeholder widgets for now
   static const List<Widget> _widgetOptions = <Widget>[
     Center(child: Text('Dashboard')),
+    SensorMonitoringScreen(),
 
   ];
 
@@ -41,20 +42,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard_outlined),
+            icon: Icon(Icons.dashboard_outlined),
             label: 'Dashboard',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.sensors),
             label: 'Sensors',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.toggle_on_outlined),
             label: 'Controls',
           ),
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.analytics_outlined),
             label: 'Analytics',
           ),
@@ -62,7 +63,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        onTap: (_) {},// Till all items are implemented
+        onTap: (index) {
+          // Only handle navigation for the "Sensors" item (index 1)
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SensorMonitoringScreen(),
+              ),
+            );
+          }
+          // Do nothing for other tabs (for now)
+        },
       ),
     );
   }
