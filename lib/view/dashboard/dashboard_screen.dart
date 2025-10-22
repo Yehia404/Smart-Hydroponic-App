@@ -63,19 +63,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          // Only handle navigation for the "Sensors" item (index 1)
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SensorMonitoringScreen(),
+        onTap: _onItemTapped,
               ),
             );
           }
           // Do nothing for other tabs (for now)
-        },
-      ),
-    );
-  }
 }
