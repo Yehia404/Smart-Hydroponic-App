@@ -6,3 +6,60 @@ class ControlPanelScreen extends StatefulWidget {
   @override
   State<ControlPanelScreen> createState() => _ControlPanelScreenState();
 }
+
+class _ControlPanelScreenState extends State<ControlPanelScreen> {
+  bool _isPumpOn = false;
+  bool _areLightsOn = true;
+  bool _areFansOn = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Control Panel')),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          _buildControlSwitch(
+            title: 'Water Pump',
+            value: _isPumpOn,
+            onChanged: (bool value) => setState(() => _isPumpOn = value),
+            icon: Icons.water_damage_outlined,
+          ),
+          const Divider(),
+          _buildControlSwitch(
+            title: 'Grow Lights',
+            value: _areLightsOn,
+            onChanged: (bool value) => setState(() => _areLightsOn = value),
+            icon: Icons.lightbulb_outline_rounded,
+          ),
+          const Divider(),
+          _buildControlSwitch(
+            title: 'Cooling Fans',
+            value: _areFansOn,
+            onChanged: (bool value) => setState(() => _areFansOn = value),
+            icon: Icons.air_rounded,
+          ),
+          const Divider(height: 40),
+          // NEW: Scheduling and Logs features
+          ListTile(
+            leading: const Icon(Icons.schedule_outlined),
+            title: const Text('Schedule Tasks'),
+            subtitle: const Text('Automate pump and light cycles'),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.history_outlined),
+            title: const Text('Control History Logs'),
+            subtitle: const Text('View past manual actions'),
+            onTap: () {},
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Emergency Stop'),
+          ),
+        ],
+      ),
+    );
+  }
