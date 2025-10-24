@@ -63,3 +63,18 @@ class _ControlPanelScreenState extends State<ControlPanelScreen> {
       ),
     );
   }
+
+    Widget _buildControlSwitch({
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required IconData icon,
+  }) {
+    return SwitchListTile(
+      title: Text(title, style: const TextStyle(fontSize: 18)),
+      value: value,
+      onChanged: onChanged,
+      secondary: Icon(icon, size: 30),
+    );
+  }
+}
