@@ -28,6 +28,12 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text('Calibrate sensors and actuators'),
             onTap: null,
           ),
+          const Divider(),
+          const ListTile(
+            leading: Icon(Icons.logout),
+            title: Text('Logout'),
+            onTap: null,
+          ),
         ],
       ),
     );
