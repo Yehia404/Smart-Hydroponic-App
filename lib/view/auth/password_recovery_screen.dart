@@ -21,6 +21,18 @@ class PasswordRecoveryScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
+            const SizedBox(height: 30),
+            const TextField(
+              decoration: InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                // Password recovery logic will be added here later
+              },
+              child: const Text('Send Reset Link'),
+            ),
           ],
         ),
       ),
