@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_hydroponic_app/view/controls/control_panel_screen.dart';
 import 'sensor_monitoring_screen.dart';
 import 'alerts_notifications_screen.dart';
 import '../settings/settings_screen.dart';
@@ -16,6 +17,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     Center(child: Text('Dashboard')),
     SensorMonitoringScreen(),
+    ControlPanelScreen()
 
   ];
 
