@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../dashboard/dashboard_screen.dart';
-import 'register_screen.dart';
-import 'password_recovery_screen.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -10,20 +8,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Text editing controllers to retrieve input
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
-    if (_emailController.text == "yehia" && _passwordController.text == "123") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid email or password')),
-      );
-    }
+  @override
+  void dispose() {
+    // Clean up controllers when the widget is removed
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -37,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Logo
                   const Icon(Icons.eco_rounded, size: 80, color: Colors.green),
                   const SizedBox(height: 20),
                   const Text(
@@ -44,49 +39,70 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 40),
+
+                  // Email Input
                   TextField(
                     controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(),
+                    ),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
+
+                  // Password Input
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                    ),
                   ),
+
                   const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: () {
-                      _login();
-                    },
-                    child: const Text('Login'),
+
+                  // Login Button (placeholder - no functionality yet)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // TODO: Implement login logic
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
                   ),
+
                   const SizedBox(height: 10),
+
+                  // Forgot Password Link (placeholder - no navigation yet)
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PasswordRecoveryScreen(),
-                        ),
-                      );
+                      // TODO: Navigate to password recovery screen
                     },
                     child: const Text('Forgot Password?'),
                   ),
                   const SizedBox(height: 20),
+
+                  // Sign Up Link (placeholder - no navigation yet)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegistrationScreen(),
-                            ),
-                          );
+                          // TODO: Navigate to registration screen
                         },
                         child: const Text('Sign Up'),
                       ),
