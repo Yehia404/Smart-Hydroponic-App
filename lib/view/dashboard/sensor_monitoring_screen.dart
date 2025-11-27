@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/sensor_data.dart';
+import '../../data/models/sensor_data.dart';
 
 class SensorMonitoringScreen extends StatelessWidget {
   const SensorMonitoringScreen({super.key});
