@@ -9,32 +9,58 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          const ListTile(
-            leading: Icon(Icons.person_outline),
-            title: Text('Profile'),
-            subtitle: Text('Manage your account details'),
-            onTap: null,
-          ),
-          const ListTile(
-            leading: Icon(Icons.notifications_outlined),
-            title: Text('Notifications'),
-            subtitle: Text('Set alert thresholds'),
-            onTap: null,
-          ),
-          // NEW: System Calibration option
-          const ListTile(
-            leading: Icon(Icons.tune_outlined),
-            title: Text('System Calibration'),
-            subtitle: Text('Calibrate sensors and actuators'),
-            onTap: null,
+          _buildSectionHeader('Account'),
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
+            subtitle: const Text('Manage your account details'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
           ),
           const Divider(),
-          const ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Logout'),
-            onTap: null,
+          _buildSectionHeader('System'),
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notifications'),
+            subtitle: const Text('Configure alerts and severity'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.tune),
+            title: const Text('Sensor Thresholds'),
+            subtitle: const Text('Set min/max values for alerts'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.auto_mode),
+            title: const Text('Automation Rules'),
+            subtitle: const Text('Configure auto-control logic'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () {},
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
       ),
     );
   }
