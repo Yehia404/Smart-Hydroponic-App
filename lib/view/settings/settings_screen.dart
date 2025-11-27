@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'user_profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,7 +16,14 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Profile'),
             subtitle: const Text('Manage your account details'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () => {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              ),
+            },
           ),
           const Divider(),
           _buildSectionHeader('System'),
