@@ -122,6 +122,7 @@ class UserProfileScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 24),
+<<<<<<< HEAD
 
                         // Actions Card
                         Card(
@@ -196,6 +197,8 @@ class UserProfileScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 40),
+=======
+>>>>>>> 5b33e86a4af3ca3cf3a6341005cb8ef1baf44cdf
                       ],
                     ),
                   ),
@@ -264,6 +267,7 @@ class UserProfileScreen extends StatelessWidget {
     }
     return '?';
   }
+<<<<<<< HEAD
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -308,4 +312,6 @@ class UserProfileScreen extends StatelessWidget {
       },
     );
   }
+=======
+>>>>>>> 5b33e86a4af3ca3cf3a6341005cb8ef1baf44cdf
 }
