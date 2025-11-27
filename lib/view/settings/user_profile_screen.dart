@@ -18,6 +18,8 @@ class UserProfileScreen extends StatelessWidget {
                 SliverAppBar(
                   expandedHeight: 200,
                   pinned: true,
+                  title: const Text('Profile'),
+                  centerTitle: true,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Container(
                       decoration: BoxDecoration(
@@ -68,8 +70,6 @@ class UserProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    title: const Text('Profile'),
-                    centerTitle: true,
                   ),
                 ),
 
@@ -122,6 +122,80 @@ class UserProfileScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 24),
+
+                        // Actions Card
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.refresh,
+                                  color: Colors.blue,
+                                ),
+                                title: const Text('Refresh Profile'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  // Implement refresh profile
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Refresh profile'),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.edit,
+                                  color: Colors.orange,
+                                ),
+                                title: const Text('Edit Profile'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  // Navigate to edit profile screen
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Edit profile'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Logout Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showLogoutDialog(context),
+                            icon: const Icon(Icons.logout),
+                            label: const Text(
+                              'Logout',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -189,5 +263,49 @@ class UserProfileScreen extends StatelessWidget {
       return parts[0][0].toUpperCase();
     }
     return '?';
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.logout, color: Colors.red),
+              SizedBox(width: 12),
+              Text('Logout'),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                // Implement logout functionality
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logout functionality')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
