@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "344890845400",
+    "project_id": "smart-hydroponic-app-26baa",
+    "storage_bucket": "smart-hydroponic-app-26baa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:344890845400:android:6c9239123303284a020fad",
+        "android_client_info": {
+          "package_name": "com.example.smart_hydroponic_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCrbZHtvs9QV0PYg_6aRixRPIicstMOfvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:344890845400:android:2f941080a46d2482020fad",
+        "android_client_info": {
+          "package_name": "com.example.untitled5"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCrbZHtvs9QV0PYg_6aRixRPIicstMOfvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
