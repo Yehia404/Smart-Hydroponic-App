@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'password_recovery_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -86,10 +87,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 10),
 
-                  // Forgot Password Link (placeholder - no navigation yet)
+                  // Forgot Password Link
                   TextButton(
                     onPressed: () {
-                      // TODO: Navigate to password recovery screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PasswordRecoveryScreen(),
+                        ),
+                      );
                     },
                     child: const Text('Forgot Password?'),
                   ),
