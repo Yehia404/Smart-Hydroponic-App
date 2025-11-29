@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_profile_screen.dart';
 import 'notification_settings_screen.dart';
+import 'sensor_thresholds_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -47,7 +48,14 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Sensor Thresholds'),
             subtitle: const Text('Set min/max values for alerts'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SensorThresholdsScreen(),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.auto_mode),
