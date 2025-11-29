@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'user_profile_screen.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -32,7 +33,14 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Notifications'),
             subtitle: const Text('Configure alerts and severity'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationSettingsScreen(),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.tune),
