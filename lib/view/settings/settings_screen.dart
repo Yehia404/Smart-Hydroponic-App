@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_profile_screen.dart';
 import 'notification_settings_screen.dart';
 import 'sensor_thresholds_screen.dart';
+import 'automation_rules_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -62,7 +63,14 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Automation Rules'),
             subtitle: const Text('Configure auto-control logic'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AutomationRulesScreen(),
+                ),
+              );
+            },
           ),
           const Divider(),
           ListTile(
