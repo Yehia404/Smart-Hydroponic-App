@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smart_hydroponic_app/view/dashboard/dashboard_screen.dart';
+import '../view/dashboard/home_overview_screen.dart';
 import '../view/dashboard/sensor_monitoring_screen.dart';
 import '../view/controls/control_panel_screen.dart';
 
@@ -9,7 +9,7 @@ class NavigationViewModel extends ChangeNotifier {
   int get selectedIndex => _selectedIndex;
 
   static const List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(),
+    HomeOverviewScreen(),
     SensorMonitoringScreen(),
     ControlPanelScreen(),
   ];

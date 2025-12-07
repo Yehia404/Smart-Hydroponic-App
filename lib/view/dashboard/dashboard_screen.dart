@@ -4,6 +4,8 @@ import 'alerts_notifications_screen.dart';
 import '../settings/settings_screen.dart';
 import 'bottom_navigation_view.dart';
 import '../../viewmodels/navigation_viewmodel.dart';
+
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -41,6 +43,6 @@ class DashboardScreen extends StatelessWidget {
         builder: (context, viewModel, child) => viewModel.currentWidget,
       ),
       bottomNavigationBar: const BottomNavigationView(),
-            );
-          }
+    );
+  }
 }
