@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-// --- Dummy Models ---
+//Dummy Models  
 enum TimeRange { hour, day, week, month }
 
 class SensorData {
@@ -28,7 +28,7 @@ class SensorStats {
     required this.unit,
   });
 }
-// ---------------------------------------------------------
+
 
 class AnalyticsHistoryScreen extends StatefulWidget {
   const AnalyticsHistoryScreen({super.key});
@@ -94,13 +94,88 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
           : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
+                //Time Range Selector ---
+                _buildTimeRangeSelector(),
                 
+                const SizedBox(height: 20),
+                
+                //Sensor Selector ---
+                _buildSensorSelector(),
+                
+                const SizedBox(height: 20),
+
+
               ],
             ),
     );
   }
 
-  // Helper method needed by UI components
+
+
+  Widget _buildTimeRangeSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildTimeRangeChip('1H', TimeRange.hour),
+            _buildTimeRangeChip('24H', TimeRange.day),
+            _buildTimeRangeChip('7D', TimeRange.week),
+            _buildTimeRangeChip('30D', TimeRange.month),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeRangeChip(String label, TimeRange range) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _selectedRange == range,
+      onSelected: (selected) {
+        if (selected) setState(() => _selectedRange = range);
+      },
+    );
+  }
+
+  Widget _buildSensorSelector() {
+    final sensors = [
+      {'id': 'temperature', 'name': 'Temperature', 'icon': Icons.thermostat, 'color': Colors.orange},
+      {'id': 'ph', 'name': 'pH Level', 'icon': Icons.science_outlined, 'color': Colors.blue},
+      {'id': 'water_level', 'name': 'Water Level', 'icon': Icons.water_drop, 'color': Colors.lightBlue},
+      {'id': 'light_intensity', 'name': 'Light', 'icon': Icons.lightbulb_outline, 'color': Colors.yellow.shade700},
+      {'id': 'tds', 'name': 'TDS', 'icon': Icons.opacity, 'color': Colors.purple},
+      {'id': 'humidity', 'name': 'Humidity', 'icon': Icons.grain, 'color': Colors.cyan},
+    ];
+
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: sensors.length,
+        itemBuilder: (context, index) {
+          final sensor = sensors[index];
+          final isSelected = _selectedSensor == sensor['id'];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              avatar: Icon(sensor['icon'] as IconData, size: 18),
+              label: Text(sensor['name'] as String),
+              selected: isSelected,
+              selectedColor: (sensor['color'] as Color).withOpacity(0.3),
+              onSelected: (selected) {
+                if (selected) setState(() => _selectedSensor = sensor['id'] as String);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  //Helpers 
+    
   Map<String, dynamic> _getSensorInfo(String sensor) {
     switch (sensor) {
       case 'temperature':
