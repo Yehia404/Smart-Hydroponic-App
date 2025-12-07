@@ -37,7 +37,7 @@ class LoginViewModel extends ChangeNotifier {
       _setLoading(false);
 
       if (user != null) {
-        return true;
+        return true; // Login Success
       } else {
         _errorMessage = "Login failed. Please check your credentials.";
         return false;
@@ -51,6 +51,6 @@ class LoginViewModel extends ChangeNotifier {
 
   void _setLoading(bool value) {
     _isLoading = value;
-    notifyListeners();
+    notifyListeners(); // Updates the UI
   }
 }
