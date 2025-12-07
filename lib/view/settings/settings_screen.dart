@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'user_profile_screen.dart';
-import 'notification_settings_screen.dart';
-import 'sensor_thresholds_screen.dart';
-import 'automation_rules_screen.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/settings_viewmodel.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<SettingsViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -19,14 +19,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Profile'),
             subtitle: const Text('Manage your account details'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              ),
-            },
+            onTap: () => viewModel.openProfile(context),
           ),
           const Divider(),
           _buildSectionHeader('System'),
@@ -35,48 +28,27 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Notifications'),
             subtitle: const Text('Configure alerts and severity'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationSettingsScreen(),
-                ),
-              );
-            },
+            onTap: () => viewModel.openNotifications(context),
           ),
           ListTile(
             leading: const Icon(Icons.tune),
             title: const Text('Sensor Thresholds'),
             subtitle: const Text('Set min/max values for alerts'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SensorThresholdsScreen(),
-                ),
-              );
-            },
+            onTap: () => viewModel.openSensorThresholds(context),
           ),
           ListTile(
             leading: const Icon(Icons.auto_mode),
             title: const Text('Automation Rules'),
             subtitle: const Text('Configure auto-control logic'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AutomationRulesScreen(),
-                ),
-              );
-            },
+            onTap: () => viewModel.openAutomationRules(context),
           ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {},
+            onTap: () => viewModel.logout(context),
           ),
         ],
       ),
