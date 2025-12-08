@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-//Dummy Models 
 enum TimeRange { hour, day, week, month }
 
 class SensorData {
@@ -29,7 +28,6 @@ class SensorStats {
   });
 }
 
-
 class AnalyticsHistoryScreen extends StatefulWidget {
   const AnalyticsHistoryScreen({super.key});
 
@@ -38,18 +36,16 @@ class AnalyticsHistoryScreen extends StatefulWidget {
 }
 
 class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
-  // Local State
   bool _isLoading = false;
   String _selectedSensor = 'temperature';
   TimeRange _selectedRange = TimeRange.day;
 
-  // Dummy Data Generators
   List<SensorData> _getDummyData() {
     final now = DateTime.now();
     return List.generate(20, (index) {
       return SensorData(
         now.subtract(Duration(hours: 20 - index)),
-        20 + (index * 0.5) + (index % 3), // Random curve
+        20 + (index * 0.5) + (index % 3),
       );
     });
   }
@@ -67,7 +63,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
 
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network
+    await Future.delayed(const Duration(seconds: 1));
     setState(() => _isLoading = false);
   }
 
@@ -98,17 +94,77 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
                 const SizedBox(height: 20),
                 _buildSensorSelector(),
                 const SizedBox(height: 20),
-                
-                // Chart Visualization ---
                 _buildMainChart(),
-                
                 const SizedBox(height: 30),
-                
+                _buildStatisticsCards(),
+                const SizedBox(height: 30),
+                _buildTrendAnalysis(),
               ],
             ),
     );
   }
 
+  Widget _buildTimeRangeSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildTimeRangeChip('1H', TimeRange.hour),
+            _buildTimeRangeChip('24H', TimeRange.day),
+            _buildTimeRangeChip('7D', TimeRange.week),
+            _buildTimeRangeChip('30D', TimeRange.month),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeRangeChip(String label, TimeRange range) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _selectedRange == range,
+      onSelected: (selected) {
+        if (selected) setState(() => _selectedRange = range);
+      },
+    );
+  }
+
+  Widget _buildSensorSelector() {
+    final sensors = [
+      {'id': 'temperature', 'name': 'Temperature', 'icon': Icons.thermostat, 'color': Colors.orange},
+      {'id': 'ph', 'name': 'pH Level', 'icon': Icons.science_outlined, 'color': Colors.blue},
+      {'id': 'water_level', 'name': 'Water Level', 'icon': Icons.water_drop, 'color': Colors.lightBlue},
+      {'id': 'light_intensity', 'name': 'Light', 'icon': Icons.lightbulb_outline, 'color': Colors.yellow.shade700},
+      {'id': 'tds', 'name': 'TDS', 'icon': Icons.opacity, 'color': Colors.purple},
+      {'id': 'humidity', 'name': 'Humidity', 'icon': Icons.grain, 'color': Colors.cyan},
+    ];
+
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: sensors.length,
+        itemBuilder: (context, index) {
+          final sensor = sensors[index];
+          final isSelected = _selectedSensor == sensor['id'];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              avatar: Icon(sensor['icon'] as IconData, size: 18),
+              label: Text(sensor['name'] as String),
+              selected: isSelected,
+              selectedColor: (sensor['color'] as Color).withOpacity(0.3),
+              onSelected: (selected) {
+                if (selected) setState(() => _selectedSensor = sensor['id'] as String);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildMainChart() {
     final data = _getDummyData();
@@ -226,71 +282,214 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
+  Widget _buildStatisticsCards() {
+    final stats = _getDummyStats();
 
-
-  Widget _buildTimeRangeSelector() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Statistics',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Row(
           children: [
-            _buildTimeRangeChip('1H', TimeRange.hour),
-            _buildTimeRangeChip('24H', TimeRange.day),
-            _buildTimeRangeChip('7D', TimeRange.week),
-            _buildTimeRangeChip('30D', TimeRange.month),
+            Expanded(child: _buildStatCard('Current', stats.current, stats.unit, Colors.blue)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildStatCard('Average', stats.avg, stats.unit, Colors.green)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: _buildStatCard('Min', stats.min, stats.unit, Colors.cyan)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildStatCard('Max', stats.max, stats.unit, Colors.orange)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, double value, String unit, Color color) {
+    return Card(
+      color: color.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${value.toStringAsFixed(2)} $unit',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTimeRangeChip(String label, TimeRange range) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: _selectedRange == range,
-      onSelected: (selected) {
-        if (selected) setState(() => _selectedRange = range);
-      },
-    );
-  }
+  Widget _buildTrendAnalysis() {
+    final stats = _getDummyStats();
 
-  Widget _buildSensorSelector() {
-    final sensors = [
-      {'id': 'temperature', 'name': 'Temperature', 'icon': Icons.thermostat, 'color': Colors.orange},
-      {'id': 'ph', 'name': 'pH Level', 'icon': Icons.science_outlined, 'color': Colors.blue},
-      {'id': 'water_level', 'name': 'Water Level', 'icon': Icons.water_drop, 'color': Colors.lightBlue},
-      {'id': 'light_intensity', 'name': 'Light', 'icon': Icons.lightbulb_outline, 'color': Colors.yellow.shade700},
-      {'id': 'tds', 'name': 'TDS', 'icon': Icons.opacity, 'color': Colors.purple},
-      {'id': 'humidity', 'name': 'Humidity', 'icon': Icons.grain, 'color': Colors.cyan},
-    ];
+    final trendDirection = stats.trend > 0 ? 'increasing' : stats.trend < 0 ? 'decreasing' : 'stable';
+    final trendIcon = stats.trend > 0 ? Icons.trending_up : stats.trend < 0 ? Icons.trending_down : Icons.trending_flat;
+    final trendColor = stats.trend > 0 ? Colors.red : stats.trend < 0 ? Colors.blue : Colors.grey;
 
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: sensors.length,
-        itemBuilder: (context, index) {
-          final sensor = sensors[index];
-          final isSelected = _selectedSensor == sensor['id'];
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: FilterChip(
-              avatar: Icon(sensor['icon'] as IconData, size: 18),
-              label: Text(sensor['name'] as String),
-              selected: isSelected,
-              selectedColor: (sensor['color'] as Color).withOpacity(0.3),
-              onSelected: (selected) {
-                if (selected) setState(() => _selectedSensor = sensor['id'] as String);
-              },
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Trend Analysis',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          );
-        },
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(trendIcon, color: trendColor, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Trend is $trendDirection',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: trendColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${stats.trend > 0 ? '+' : ''}${stats.trend.toStringAsFixed(2)} ${stats.unit} from average',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            _buildTrendInsight(_selectedSensor, stats),
+          ],
+        ),
       ),
     );
   }
 
-  
+  Widget _buildTrendInsight(String sensor, SensorStats stats) {
+    String insight = '';
+    IconData icon = Icons.info_outline;
+    Color color = Colors.blue;
+
+    switch (sensor) {
+      case 'temperature':
+        if (stats.current > 30) {
+          insight = 'Temperature is high. Consider increasing ventilation.';
+          icon = Icons.warning;
+          color = Colors.orange;
+        } else if (stats.current < 18) {
+          insight = 'Temperature is low. Check heating system.';
+          icon = Icons.warning;
+          color = Colors.blue;
+        } else {
+          insight = 'Temperature is within optimal range (18-30°C).';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+      case 'ph':
+        if (stats.current < 5.5 || stats.current > 6.5) {
+          insight = 'pH is outside optimal range (5.5-6.5). Adjust nutrient solution.';
+          icon = Icons.warning;
+          color = Colors.orange;
+        } else {
+          insight = 'pH level is optimal for hydroponic growth.';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+      case 'water_level':
+        if (stats.current < 30) {
+          insight = 'Water level is low. Refill reservoir soon.';
+          icon = Icons.warning;
+          color = Colors.red;
+        } else {
+          insight = 'Water level is adequate.';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+      case 'light_intensity':
+        if (stats.current < 50) {
+          insight = 'Light intensity is low. Plants may need more light.';
+          icon = Icons.info;
+          color = Colors.orange;
+        } else {
+          insight = 'Light intensity is sufficient for plant growth.';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+      case 'tds':
+        if (stats.current < 800 || stats.current > 1500) {
+          insight = 'TDS is outside optimal range (800-1500 ppm).';
+          icon = Icons.warning;
+          color = Colors.orange;
+        } else {
+          insight = 'Nutrient concentration is optimal.';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+      case 'humidity':
+        if (stats.current > 70) {
+          insight = 'High humidity. Risk of mold. Increase ventilation.';
+          icon = Icons.warning;
+          color = Colors.orange;
+        } else if (stats.current < 40) {
+          insight = 'Low humidity. Plants may need more moisture.';
+          icon = Icons.info;
+          color = Colors.blue;
+        } else {
+          insight = 'Humidity level is optimal (40-70%).';
+          icon = Icons.check_circle;
+          color = Colors.green;
+        }
+        break;
+    }
+
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            insight,
+            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+          ),
+        ),
+      ],
+    );
+  }
+
   Map<String, dynamic> _getSensorInfo(String sensor) {
     switch (sensor) {
       case 'temperature':
