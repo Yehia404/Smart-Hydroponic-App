@@ -10,14 +10,13 @@ import 'viewmodels/registration_viewmodel.dart';
 import 'viewmodels/navigation_viewmodel.dart';
 import 'viewmodels/home_overview_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
+import 'viewmodels/user_profile_viewmodel.dart';
 import 'data/models/threshold_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await ThresholdConfig.instance.init();
 
   runApp(const MyApp());
@@ -37,13 +36,16 @@ class MyApp extends StatelessWidget {
           create: (context) => LoginViewModel(context.read<AuthService>()),
         ),
         ChangeNotifierProvider(
-          create: (context) => RegistrationViewModel(context.read<AuthService>()),
+          create: (context) =>
+              RegistrationViewModel(context.read<AuthService>()),
         ),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
         ChangeNotifierProvider(
-          create: (context) => HomeOverviewViewModel(context.read<FirestoreService>()),
+          create: (context) =>
+              HomeOverviewViewModel(context.read<FirestoreService>()),
         ),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
+        ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -52,7 +54,9 @@ class MyApp extends StatelessWidget {
           primaryColor: Colors.green,
           scaffoldBackgroundColor: const Color(0xFF1a1a1a),
           inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
