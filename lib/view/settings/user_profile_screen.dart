@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/user_profile_viewmodel.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userName = 'Yehia Sakr';
-    final userEmail = 'yehia.sakr@example.com';
-    final isLoading = false;
+    final viewModel = Provider.of<UserProfileViewModel>(context);
 
     return Scaffold(
-      body: isLoading
+      body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
               slivers: [
@@ -57,7 +57,7 @@ class UserProfileScreen extends StatelessWidget {
                                 radius: 50,
                                 backgroundColor: Colors.white,
                                 child: Text(
-                                  _getInitials(userName),
+                                  _getInitials(viewModel.userName),
                                   style: TextStyle(
                                     fontSize: 36,
                                     fontWeight: FontWeight.bold,
@@ -104,7 +104,7 @@ class UserProfileScreen extends StatelessWidget {
                                 _buildInfoRow(
                                   icon: Icons.person,
                                   label: 'Full Name',
-                                  value: userName,
+                                  value: viewModel.userName,
                                   context: context,
                                 ),
                                 const Divider(height: 32),
@@ -113,7 +113,7 @@ class UserProfileScreen extends StatelessWidget {
                                 _buildInfoRow(
                                   icon: Icons.email,
                                   label: 'Email',
-                                  value: userEmail,
+                                  value: viewModel.userEmail,
                                   context: context,
                                 ),
                               ],
@@ -138,14 +138,7 @@ class UserProfileScreen extends StatelessWidget {
                                 ),
                                 title: const Text('Refresh Profile'),
                                 trailing: const Icon(Icons.chevron_right),
-                                onTap: () {
-                                  // Implement refresh profile
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Refresh profile'),
-                                    ),
-                                  );
-                                },
+                                onTap: () => viewModel.refreshProfile(),
                               ),
                               const Divider(height: 1),
                               ListTile(
@@ -175,7 +168,8 @@ class UserProfileScreen extends StatelessWidget {
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton.icon(
-                            onPressed: () => _showLogoutDialog(context),
+                            onPressed: () =>
+                                _showLogoutDialog(context, viewModel),
                             icon: const Icon(Icons.logout),
                             label: const Text(
                               'Logout',
@@ -265,7 +259,7 @@ class UserProfileScreen extends StatelessWidget {
     return '?';
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, UserProfileViewModel viewModel) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -292,10 +286,7 @@ class UserProfileScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                // Implement logout functionality
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logout functionality')),
-                );
+                viewModel.logout(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
