@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-//Dummy Models  
+//Dummy Models 
 enum TimeRange { hour, day, week, month }
 
 class SensorData {
@@ -16,7 +16,7 @@ class SensorStats {
   final double avg;
   final double min;
   final double max;
-  final double trend; // +ve for up, -ve for down
+  final double trend;
   final String unit;
 
   SensorStats({
@@ -94,19 +94,135 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
           : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                //Time Range Selector ---
                 _buildTimeRangeSelector(),
-                
                 const SizedBox(height: 20),
-                
-                //Sensor Selector ---
                 _buildSensorSelector(),
-                
                 const SizedBox(height: 20),
-
-
+                
+                // Chart Visualization ---
+                _buildMainChart(),
+                
+                const SizedBox(height: 30),
+                
               ],
             ),
+    );
+  }
+
+
+  Widget _buildMainChart() {
+    final data = _getDummyData();
+    final sensorInfo = _getSensorInfo(_selectedSensor);
+    
+    if (data.isEmpty) {
+      return Card(
+        child: Container(
+          height: 300,
+          alignment: Alignment.center,
+          child: const Text('No data available'),
+        ),
+      );
+    }
+
+    final spots = data.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.value);
+    }).toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(sensorInfo['icon'] as IconData, color: sensorInfo['color'] as Color),
+                const SizedBox(width: 8),
+                Text(
+                  sensorInfo['name'] as String,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 250,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    horizontalInterval: 1,
+                    verticalInterval: 1,
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toStringAsFixed(1),
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: (spots.length / 5).ceilToDouble(),
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() >= data.length) return const Text('');
+                          final timestamp = data[value.toInt()].timestamp;
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              DateFormat('HH:mm').format(timestamp),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: true),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: sensorInfo['color'] as Color,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: spots.length < 50),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: (sensorInfo['color'] as Color).withOpacity(0.2),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          final timestamp = data[spot.x.toInt()].timestamp;
+                          return LineTooltipItem(
+                            '${DateFormat('MMM d, HH:mm').format(timestamp)}\n${spot.y.toStringAsFixed(2)} ${sensorInfo['unit']}',
+                            const TextStyle(color: Colors.white),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -174,8 +290,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  //Helpers 
-    
+  
   Map<String, dynamic> _getSensorInfo(String sensor) {
     switch (sensor) {
       case 'temperature':
