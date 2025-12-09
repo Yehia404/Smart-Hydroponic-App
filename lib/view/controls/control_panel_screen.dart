@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/control_panel_viewmodel.dart';
+import '../../viewmodels/actuator_control_viewmodel.dart';
 
-class ControlPanelScreen extends StatefulWidget {
+class ControlPanelScreen extends StatelessWidget {
   const ControlPanelScreen({super.key});
 
   @override
-  State<ControlPanelScreen> createState() => _ControlPanelScreenState();
-}
-
-class _ControlPanelScreenState extends State<ControlPanelScreen> {
-  bool _isPumpOn = false;
-  bool _areLightsOn = true;
-  bool _areFansOn = false;
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<ControlPanelViewModel>(context);
+    final actuatorViewModel = Provider.of<ActuatorControlViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Control Panel')),
       body: ListView(
@@ -21,41 +18,40 @@ class _ControlPanelScreenState extends State<ControlPanelScreen> {
         children: [
           _buildControlSwitch(
             title: 'Water Pump',
-            value: _isPumpOn,
-            onChanged: (bool value) => setState(() => _isPumpOn = value),
+            value: actuatorViewModel.isPumpOn,
+            onChanged: actuatorViewModel.togglePump,
             icon: Icons.water_damage_outlined,
           ),
           const Divider(),
           _buildControlSwitch(
             title: 'Grow Lights',
-            value: _areLightsOn,
-            onChanged: (bool value) => setState(() => _areLightsOn = value),
+            value: actuatorViewModel.areLightsOn,
+            onChanged: actuatorViewModel.toggleLights,
             icon: Icons.lightbulb_outline_rounded,
           ),
           const Divider(),
           _buildControlSwitch(
             title: 'Cooling Fans',
-            value: _areFansOn,
-            onChanged: (bool value) => setState(() => _areFansOn = value),
+            value: actuatorViewModel.areFansOn,
+            onChanged: actuatorViewModel.toggleFans,
             icon: Icons.air_rounded,
           ),
           const Divider(height: 40),
-          // NEW: Scheduling and Logs features
           ListTile(
             leading: const Icon(Icons.schedule_outlined),
             title: const Text('Schedule Tasks'),
             subtitle: const Text('Automate pump and light cycles'),
-            onTap: () {},
+            onTap: () => viewModel.openScheduleTasks(context),
           ),
           ListTile(
             leading: const Icon(Icons.history_outlined),
             title: const Text('Control History Logs'),
             subtitle: const Text('View past manual actions'),
-            onTap: () {},
+            onTap: () => viewModel.openControlHistory(context),
           ),
           const SizedBox(height: 40),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: actuatorViewModel.emergencyStop,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Emergency Stop'),
           ),
@@ -64,7 +60,7 @@ class _ControlPanelScreenState extends State<ControlPanelScreen> {
     );
   }
 
-    Widget _buildControlSwitch({
+  Widget _buildControlSwitch({
     required String title,
     required bool value,
     required ValueChanged<bool> onChanged,
