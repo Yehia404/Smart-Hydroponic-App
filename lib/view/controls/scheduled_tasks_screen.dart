@@ -402,3 +402,50 @@ class ScheduledTasksScreen extends StatelessWidget {
       ),
     );
   }
+
+
+ String _formatTime(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
+  bool _isTaskUpcoming(TimeOfDay taskTime) {
+    final now = TimeOfDay.now();
+    final nowInMinutes = now.hour * 60 + now.minute;
+    final taskInMinutes = taskTime.hour * 60 + taskTime.minute;
+    
+    // Check if task is within the next 30 minutes
+    final diff = taskInMinutes - nowInMinutes;
+    return diff > 0 && diff <= 30;
+  }
+
+  void _testTask(BuildContext context, ScheduledTask task) async {
+    try {
+      await TaskSchedulerService.instance.executeTaskNow(task);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Task executed: ${task.actuatorId.toUpperCase()} turned ${task.action ? "ON" : "OFF"}',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error executing task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+}
+
