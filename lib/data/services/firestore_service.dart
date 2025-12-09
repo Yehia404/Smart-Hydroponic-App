@@ -128,6 +128,33 @@ class FirestoreService {
       // Don't throw - logging failures shouldn't break control functionality
     }
   }
+
+   Future<List<ControlLog>> fetchControlHistory({
+    int limitCount = 100,
+    String? actuatorFilter,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection('devices')
+          .doc(_deviceId)
+          .collection('control_logs')
+          .orderBy('timestamp', descending: true)
+          .limit(limitCount);
+
+      // Apply actuator filter if provided
+      if (actuatorFilter != null && actuatorFilter.isNotEmpty) {
+        query = query.where('actuatorId', isEqualTo: actuatorFilter);
+      }
+
+      final querySnapshot = await query.get();
+      return querySnapshot.docs
+          .map((doc) => ControlLog.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching control history: $e');
+      return [];
+    }
+  }
   /// Provides a stream of control history logs
   Stream<List<ControlLog>> getControlHistoryStream({
     int limitCount = 50,
@@ -151,3 +178,5 @@ class FirestoreService {
   }
 
   }
+
+  
