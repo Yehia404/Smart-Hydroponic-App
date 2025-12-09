@@ -170,3 +170,235 @@ class ScheduledTasksScreen extends StatelessWidget {
       ),
     );
   }
+
+  
+  void _showTaskDetails(
+    BuildContext context,
+    ScheduledTasksViewModel viewModel,
+    ScheduledTask task,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              viewModel.getActuatorIcon(task.actuatorId),
+              color: viewModel.getActuatorColor(task.actuatorId),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(viewModel.getActuatorDisplayName(task.actuatorId)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: Icon(
+                task.action ? Icons.power_settings_new : Icons.power_off,
+                color: task.action ? Colors.green : Colors.red,
+              ),
+              title: Text(
+                'Action: Turn ${task.action ? "ON" : "OFF"}',
+                style: TextStyle(
+                  color: task.action ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.access_time, color: Colors.blue),
+              title: Text('Time: ${_formatTime(task.time)}'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              if (task.id != null) {
+                _showDeleteConfirmation(context, viewModel, task);
+              }
+            },
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddTaskDialog(BuildContext context, ScheduledTasksViewModel viewModel) {
+    String selectedActuator = 'pump';
+    bool selectedAction = true;
+    TimeOfDay selectedTime = TimeOfDay.now();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add Scheduled Task'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Actuator Selection
+                DropdownButtonFormField<String>(
+                  value: selectedActuator,
+                  decoration: const InputDecoration(
+                    labelText: 'Actuator',
+                    prefixIcon: Icon(Icons.devices),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'pump', child: Text('Water Pump')),
+                    DropdownMenuItem(value: 'lights', child: Text('Grow Lights')),
+                    DropdownMenuItem(value: 'fans', child: Text('Ventilation Fans')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => selectedActuator = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Action Selection
+                DropdownButtonFormField<bool>(
+                  value: selectedAction,
+                  decoration: const InputDecoration(
+                    labelText: 'Action',
+                    prefixIcon: Icon(Icons.power_settings_new),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: true, child: Text('Turn ON')),
+                    DropdownMenuItem(value: false, child: Text('Turn OFF')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => selectedAction = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Time Selection
+                ListTile(
+                  leading: const Icon(Icons.access_time),
+                  title: const Text('Time'),
+                  subtitle: Text(_formatTime(selectedTime)),
+                  trailing: const Icon(Icons.edit),
+                  onTap: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: selectedTime,
+                    );
+                    if (time != null) {
+                      setState(() => selectedTime = time);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final task = ScheduledTask(
+                  actuatorId: selectedActuator,
+                  action: selectedAction,
+                  time: selectedTime,
+                );
+
+                try {
+                  await viewModel.addTask(task);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Task created successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error creating task: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Add Task'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    ScheduledTasksViewModel viewModel,
+    ScheduledTask task,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task?'),
+        content: Text(
+          'Are you sure you want to delete this scheduled task for ${viewModel.getActuatorDisplayName(task.actuatorId)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (task.id != null) {
+                try {
+                  await viewModel.deleteTask(task.id!);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Task deleted'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error deleting task: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
