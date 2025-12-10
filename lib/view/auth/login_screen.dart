@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'password_recovery_screen.dart';
 import 'register_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -120,6 +122,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
+                  // Skip Login Button for testing (only in debug mode)
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        // Navigate to Dashboard and replace the Login route so back won't return to it
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DashboardScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Skip Login (for testing)',
+                        style: TextStyle(color: Colors.green),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
