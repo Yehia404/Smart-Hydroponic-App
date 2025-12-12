@@ -1,27 +1,25 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import '../models/alert.dart';
 import '../models/scheduled_task.dart';
 import 'dart:async';
 
 class SqliteService {
   static const String _dbName = 'hydroponics.db';
-  static const int _dbVersion = 7;
 
   // Table Names
   static const String _alertsTable = 'alerts';
   static const String _tasksTable = 'scheduled_tasks';
   static const String _settingsTable = 'settings';
   static const String _rulesTable = 'automation_rules';
-// 2. Create a Broadcast Stream
+
+  // Broadcast Stream for alerts
   final _alertStreamController = StreamController<void>.broadcast();
 
-  // 3. Expose the stream to the outside world
+  // Expose the stream to the outside world
   Stream<void> get onAlertsChanged => _alertStreamController.stream;
+
   // --- Singleton Setup ---
-  // This ensures we only have one instance of this database service
   SqliteService._privateConstructor();
   static final SqliteService instance = SqliteService._privateConstructor();
 
@@ -38,116 +36,12 @@ class SqliteService {
     String path = join(await getDatabasesPath(), _dbName);
     return await openDatabase(
       path,
-      version: _dbVersion,
+      version: 1,
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
     );
-  }
-  
-  // --- Database Migration ---
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // Add isDismissed column to alerts table if upgrading from version 1
-      await db.execute('ALTER TABLE $_alertsTable ADD COLUMN isDismissed INTEGER DEFAULT 0');
-    }
-    if (oldVersion < 3) {
-      // Ensure isDismissed column exists (in case of any inconsistency)
-      try {
-        await db.execute('ALTER TABLE $_alertsTable ADD COLUMN isDismissed INTEGER DEFAULT 0');
-      } catch (e) {
-        // Column already exists, ignore error
-        print('isDismissed column already exists: $e');
-      }
-    }
-    if (oldVersion < 4) {
-      // Add severity column for alert categorization
-      try {
-        await db.execute('ALTER TABLE $_alertsTable ADD COLUMN severity TEXT NOT NULL DEFAULT "info"');
-      } catch (e) {
-        // Column already exists, ignore error
-        print('severity column already exists: $e');
-      }
-    }
-    if (oldVersion < 5) {
-      // Add settings and automation_rules tables
-      await db.execute('''
-        CREATE TABLE $_settingsTable (
-          key TEXT PRIMARY KEY,
-          value TEXT
-        )
-      ''');
-      await db.execute('''
-        CREATE TABLE $_rulesTable (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          sensor TEXT NOT NULL,
-          condition TEXT NOT NULL,
-          threshold REAL NOT NULL,
-          actuator TEXT NOT NULL,
-          action TEXT NOT NULL,
-          isEnabled INTEGER DEFAULT 1
-        )
-      ''');
-    }
-    if (oldVersion < 6) {
-      // Add userId to settings and automation_rules for user isolation
-      await db.execute('DROP TABLE IF EXISTS $_settingsTable');
-      await db.execute('DROP TABLE IF EXISTS $_rulesTable');
-      
-      await db.execute('''
-        CREATE TABLE $_settingsTable (
-          key TEXT NOT NULL,
-          userId TEXT NOT NULL,
-          value TEXT,
-          PRIMARY KEY (key, userId)
-        )
-      ''');
-      
-      await db.execute('''
-        CREATE TABLE $_rulesTable (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId TEXT NOT NULL,
-          sensor TEXT NOT NULL,
-          condition TEXT NOT NULL,
-          threshold REAL NOT NULL,
-          actuator TEXT NOT NULL,
-          action TEXT NOT NULL,
-          isEnabled INTEGER DEFAULT 1
-        )
-      ''');
-    }
-    if (oldVersion < 7) {
-      // Force recreation to ensure userId columns exist and are indexed
-      await db.execute('DROP TABLE IF EXISTS $_settingsTable');
-      await db.execute('DROP TABLE IF EXISTS $_rulesTable');
-      
-      await db.execute('''
-        CREATE TABLE $_settingsTable (
-          key TEXT NOT NULL,
-          userId TEXT NOT NULL,
-          value TEXT,
-          PRIMARY KEY (key, userId)
-        )
-      ''');
-      
-      await db.execute('''
-        CREATE TABLE $_rulesTable (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId TEXT NOT NULL,
-          sensor TEXT NOT NULL,
-          condition TEXT NOT NULL,
-          threshold REAL NOT NULL,
-          actuator TEXT NOT NULL,
-          action TEXT NOT NULL,
-          isEnabled INTEGER DEFAULT 1
-        )
-      ''');
-      
-      print('✅ DATABASE: Tables recreated with userId support (version 7)');
-    }
   }
 
   // --- Table Creation ---
-  // This is called only once when the database is first created
   Future<void> _onCreate(Database db, int version) async {
     // Create Alerts Table
     await db.execute('''
@@ -209,8 +103,7 @@ class SqliteService {
       int id = await db.insert(_alertsTable, data);
       print('✅ Alert inserted successfully with ID: $id');
 
-      // 4. BROADCAST THE SIGNAL!
-      // This tells anyone listening: "New data is here!"
+      // Broadcast the signal
       _alertStreamController.add(null);
 
       return id;
@@ -219,6 +112,7 @@ class SqliteService {
       rethrow;
     }
   }
+
   /// Fetch ONLY active alerts (where isDismissed is 0)
   Future<List<Alert>> getActiveAlerts() async {
     try {
@@ -226,7 +120,7 @@ class SqliteService {
       final List<Map<String, dynamic>> maps = await db.query(
         _alertsTable,
         where: 'isDismissed = ?',
-        whereArgs: [0], // Only fetch active ones
+        whereArgs: [0],
         orderBy: 'timestamp DESC',
       );
       print('📊 Fetched ${maps.length} active alerts from database');
@@ -236,6 +130,7 @@ class SqliteService {
       return [];
     }
   }
+
   /// Retrieves all alerts from the database, ordered by newest first.
   Future<List<Alert>> getAlertHistory() async {
     Database db = await instance.database;
@@ -248,6 +143,7 @@ class SqliteService {
       return Alert.fromMap(maps[i]);
     });
   }
+
   Future<int> dismissAlert(int id) async {
     Database db = await instance.database;
     int result = await db.update(
@@ -261,12 +157,6 @@ class SqliteService {
     _alertStreamController.add(null);
     return result;
   }
-
-  /// Deletes all alerts from the table.
-  /*Future<int> clearAlertHistory() async {
-    Database db = await instance.database;
-    return await db.delete(_alertsTable);
-  }*/
 
   // --- CRUD Operations for ScheduledTasks ---
 

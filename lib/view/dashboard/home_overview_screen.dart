@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/home_overview_viewmodel.dart';
+import '../../viewmodels/actuator_control_viewmodel.dart';
 
 class HomeOverviewScreen extends StatelessWidget {
   const HomeOverviewScreen({super.key});
@@ -8,6 +9,7 @@ class HomeOverviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<HomeOverviewViewModel>(context);
+    final actuatorViewModel = Provider.of<ActuatorControlViewModel>(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -118,15 +120,38 @@ class HomeOverviewScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: actuatorViewModel.togglePump,
+                  icon: Icon(actuatorViewModel.isPumpOn ? Icons.stop : Icons.play_arrow),
+                  label: Text(actuatorViewModel.isPumpOn ? 'Stop Pump' : 'Start Pump'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: actuatorViewModel.isPumpOn ? Colors.orange : Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
               const SizedBox(width: 10),
-
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: actuatorViewModel.toggleLights,
+                  icon: Icon(actuatorViewModel.areLightsOn ? Icons.lightbulb : Icons.lightbulb_outline),
+                  label: Text(actuatorViewModel.areLightsOn ? 'Lights OFF' : 'Lights ON'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: actuatorViewModel.areLightsOn ? Colors.amber : Colors.grey,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: (){},
+              onPressed: actuatorViewModel.emergencyStop,
               icon: const Icon(Icons.warning),
               label: const Text('EMERGENCY STOP'),
               style: ElevatedButton.styleFrom(
