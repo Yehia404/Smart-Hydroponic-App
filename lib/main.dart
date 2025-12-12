@@ -13,6 +13,7 @@ import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/user_profile_viewmodel.dart';
 import 'data/models/threshold_config.dart';
 import 'viewmodels/notification_settings_viewmodel.dart';
+import 'viewmodels/sensor_thresholds_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
         ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationSettingsViewModel()),
+        ChangeNotifierProvider(create: (_) => SensorThresholdsViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
