@@ -2,7 +2,12 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/sensor_data.dart';
+import '../models/alert.dart';
 import '../models/control_log.dart';
+import '../services/auth_service.dart';
+import '../models/threshold_config.dart';
+import 'sqlite_service.dart';
+
 class FirestoreService {
   // Singleton Setup
   FirestoreService._privateConstructor() {
@@ -14,12 +19,21 @@ class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _deviceId = 'hydroponic_system'; // Single device for now
 
- 
+  // Keep track of last alert time to avoid spamming notifications (per session)
+  DateTime? _lastNotificationTime;
+  StreamSubscription? _authSubscription;
+
   void _listenToAuthChanges() {
-    //placeholder for now
-    return;
+    _authSubscription = AuthService.instance.authStateChanges.listen((user) {
+      // Reset notification timeout when auth state changes (login/logout)
+      _lastNotificationTime = null;
+      debugPrint('🔄 FIRESTORE: Reset notification timeout for new session');
+    });
   }
-   Stream<List<SensorData>> getSensorStream() {
+
+  /// Provides a stream of sensor data from Firestore
+  /// Only returns data confirmed by the server (ignores local optimistic updates)
+  Stream<List<SensorData>> getSensorStream() {
     return _firestore
         .collection('devices')
         .doc(_deviceId)
@@ -66,12 +80,12 @@ class FirestoreService {
           );
 
           // Check alerts
-          
 
           return sensorList;
         });
   }
-    /// Provides a stream of actuator states from Firestore
+
+  /// Provides a stream of actuator states from Firestore
   Stream<Map<String, bool>> getActuatorStream() {
     return _firestore.collection('devices').doc(_deviceId).snapshots().map((
       snapshot,
@@ -90,7 +104,8 @@ class FirestoreService {
       };
     });
   }
-   /// Updates an actuator state in Firestore
+
+  /// Updates an actuator state in Firestore
   Future<void> updateActuator(String actuatorId, bool isOn) async {
     try {
       await _firestore.collection('devices').doc(_deviceId).update({
@@ -102,7 +117,8 @@ class FirestoreService {
       throw e;
     }
   }
- /// Logs a control action to Firestore for history tracking
+
+  /// Logs a control action to Firestore for history tracking
   Future<void> logControlAction(
     String actuatorId,
     bool action, {
@@ -129,7 +145,8 @@ class FirestoreService {
     }
   }
 
-   Future<List<ControlLog>> fetchControlHistory({
+  /// Fetches control history logs from Firestore
+  Future<List<ControlLog>> fetchControlHistory({
     int limitCount = 100,
     String? actuatorFilter,
   }) async {
@@ -155,6 +172,7 @@ class FirestoreService {
       return [];
     }
   }
+
   /// Provides a stream of control history logs
   Stream<List<ControlLog>> getControlHistoryStream({
     int limitCount = 50,
@@ -177,6 +195,51 @@ class FirestoreService {
     });
   }
 
+  // --- User Profile Management ---
+  
+  /// Creates a user profile document in Firestore
+  Future<void> createUserProfile({
+    required String userId,
+    required String name,
+    required String email,
+  }) async {
+    try {
+      await _firestore.collection('users').doc(userId).set({
+        'name': name,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('✅ User profile created for: $userId');
+    } catch (e) {
+      debugPrint('❌ Error creating user profile: $e');
+      throw e;
+    }
   }
 
-  
+  /// Gets a user profile from Firestore
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error getting user profile: $e');
+      return null;
+    }
+  }
+
+  /// Updates a user's name in Firestore
+  Future<void> updateUserName(String userId, String newName) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'name': newName,
+      });
+      debugPrint('✅ User name updated for: $userId');
+    } catch (e) {
+      debugPrint('❌ Error updating user name: $e');
+      throw e;
+    }
+  }
+}
