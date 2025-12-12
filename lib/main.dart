@@ -16,6 +16,7 @@ import 'viewmodels/notification_settings_viewmodel.dart';
 import 'viewmodels/sensor_thresholds_viewmodel.dart';
 import 'viewmodels/control_panel_viewmodel.dart';
 import 'viewmodels/actuator_control_viewmodel.dart';
+import 'viewmodels/alerts_notifications_viewmodel.dart';
 
 
 void main() async {
@@ -56,6 +57,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ControlPanelViewModel()),
         ChangeNotifierProvider(
           create: (context) => ActuatorControlViewModel(context.read<FirestoreService>()),
+          
+        ),
+         ChangeNotifierProvider(
+          create: (_) => AlertsNotificationsViewModel(),
         ),
       ],
       child: MaterialApp(
