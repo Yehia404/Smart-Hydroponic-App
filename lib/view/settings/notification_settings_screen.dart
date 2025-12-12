@@ -1,41 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/notification_settings_viewmodel.dart';
 
-class NotificationSettingsScreen extends StatefulWidget {
+class NotificationSettingsScreen extends StatelessWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() =>
-      _NotificationSettingsScreenState();
-}
-
-class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
-  bool criticalEnabled = true;
-  bool warningEnabled = true;
-  bool infoEnabled = false;
-  bool isLoading = false;
-
-  void toggleSetting(String type, bool value) {
-    setState(() {
-      switch (type) {
-        case 'critical':
-          criticalEnabled = value;
-          break;
-        case 'warning':
-          warningEnabled = value;
-          break;
-        case 'info':
-          infoEnabled = value;
-          break;
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<NotificationSettingsViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Notification Settings')),
-      body: isLoading
+      body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -43,24 +19,24 @@ class _NotificationSettingsScreenState
                 _buildSwitchTile(
                   'Critical Alerts',
                   'High priority alerts (e.g., High Temp, Leak)',
-                  criticalEnabled,
-                  (val) => toggleSetting('critical', val),
+                  viewModel.criticalEnabled,
+                  (val) => viewModel.toggleSetting('critical', val),
                   Icons.error,
                   Colors.red,
                 ),
                 _buildSwitchTile(
                   'Warnings',
                   'Medium priority alerts (e.g., pH slightly off)',
-                  warningEnabled,
-                  (val) => toggleSetting('warning', val),
+                  viewModel.warningEnabled,
+                  (val) => viewModel.toggleSetting('warning', val),
                   Icons.warning,
                   Colors.orange,
                 ),
                 _buildSwitchTile(
                   'Info Notifications',
                   'Low priority updates (e.g., System online)',
-                  infoEnabled,
-                  (val) => toggleSetting('info', val),
+                  viewModel.infoEnabled,
+                  (val) => viewModel.toggleSetting('info', val),
                   Icons.info,
                   Colors.blue,
                 ),
