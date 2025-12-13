@@ -100,7 +100,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
                 const SizedBox(height: 30),
                 _buildTrendAnalysis(),
                 const SizedBox(height: 30),
-                _buildHistoricalDataTable(), // Added the new table here
+                _buildHistoricalDataTable(), 
               ],
             ),
     );
@@ -492,10 +492,10 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  // --- NEW CODE ADDED FOR COMMIT 1 ---
+  
 
   Widget _buildHistoricalDataTable() {
-    // USING LOCAL VARIABLES FOR NOW (INCREMENTAL COMMIT)
+    // USING LOCAL VARIABLES FOR NOW 
     final data = _getDummyData(); 
     final sensorInfo = _getSensorInfo(_selectedSensor);
     
