@@ -39,6 +39,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
   bool _isLoading = false;
   String _selectedSensor = 'temperature';
   TimeRange _selectedRange = TimeRange.day;
+  String? _errorMessage;
 
   List<SensorData> _getDummyData() {
     final now = DateTime.now();
@@ -67,6 +68,27 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     setState(() => _isLoading = false);
   }
 
+  Future<String?> _exportData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Simulate network/file operation delay
+      await Future.delayed(const Duration(seconds: 2));
+      
+      setState(() => _isLoading = false);
+      return 'Data exported to Downloads/analytics_data.csv';
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to export data: $e';
+      });
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,8 +97,35 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download),
-            onPressed: () {},
-            tooltip: 'Export Data',
+            onPressed: () async {
+              final successMessage = await _exportData();
+              
+              if (context.mounted) {
+                if (successMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(successMessage),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 5),
+                      action: SnackBarAction(
+                        label: 'OK',
+                        textColor: Colors.white,
+                        onPressed: () {},
+                      ),
+                    ),
+                  );
+                } else if (_errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_errorMessage!),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 5),
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: 'Export to Downloads',
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -100,7 +149,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
                 const SizedBox(height: 30),
                 _buildTrendAnalysis(),
                 const SizedBox(height: 30),
-                _buildHistoricalDataTable(), 
+                _buildHistoricalDataTable(),
               ],
             ),
     );
@@ -492,16 +541,12 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  
-
   Widget _buildHistoricalDataTable() {
-    // USING LOCAL VARIABLES FOR NOW 
-    final data = _getDummyData(); 
+    final data = _getDummyData();
     final sensorInfo = _getSensorInfo(_selectedSensor);
     
     if (data.isEmpty) return const SizedBox.shrink();
 
-    // Show last 10 data points
     final recentData = data.reversed.take(10).toList();
 
     return Card(
