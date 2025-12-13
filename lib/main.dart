@@ -18,6 +18,7 @@ import 'viewmodels/control_panel_viewmodel.dart';
 import 'viewmodels/actuator_control_viewmodel.dart';
 import 'viewmodels/alerts_notifications_viewmodel.dart';
 import 'viewmodels/automation_rules_viewmodel.dart';
+import 'viewmodels/password_recovery_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +64,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) =>
               AutomationRulesViewModel(context.read<HomeOverviewViewModel>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => LoginViewModel(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              PasswordRecoveryViewModel(context.read<AuthService>()),
         ),
       ],
       child: MaterialApp(
