@@ -17,7 +17,7 @@ import 'viewmodels/sensor_thresholds_viewmodel.dart';
 import 'viewmodels/control_panel_viewmodel.dart';
 import 'viewmodels/actuator_control_viewmodel.dart';
 import 'viewmodels/alerts_notifications_viewmodel.dart';
-
+import 'viewmodels/automation_rules_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,11 +56,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SensorThresholdsViewModel()),
         ChangeNotifierProvider(create: (_) => ControlPanelViewModel()),
         ChangeNotifierProvider(
-          create: (context) => ActuatorControlViewModel(context.read<FirestoreService>()),
-          
+          create: (context) =>
+              ActuatorControlViewModel(context.read<FirestoreService>()),
         ),
-         ChangeNotifierProvider(
-          create: (_) => AlertsNotificationsViewModel(),
+        ChangeNotifierProvider(create: (_) => AlertsNotificationsViewModel()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AutomationRulesViewModel(context.read<HomeOverviewViewModel>()),
         ),
       ],
       child: MaterialApp(
