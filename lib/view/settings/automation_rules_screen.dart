@@ -1,73 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/automation_rules_viewmodel.dart';
 
-class AutomationRulesScreen extends StatefulWidget {
+class AutomationRulesScreen extends StatelessWidget {
   const AutomationRulesScreen({super.key});
 
   @override
-  State<AutomationRulesScreen> createState() => _AutomationRulesScreenState();
-}
-
-class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
-  bool isLoading = false;
-  bool isAutoMode = true;
-  List<Map<String, dynamic>> rules = [
-    {
-      'id': 1,
-      'sensor': 'Temperature',
-      'condition': '>',
-      'threshold': 30.0,
-      'actuator': 'fans',
-      'action': 'ON',
-      'isEnabled': 1,
-    },
-  ];
-
-  void addRule(
-    String sensor,
-    String condition,
-    double threshold,
-    String actuator,
-    String action,
-  ) {
-    setState(() {
-      rules.add({
-        'id': rules.length + 1,
-        'sensor': sensor,
-        'condition': condition,
-        'threshold': threshold,
-        'actuator': actuator,
-        'action': action,
-        'isEnabled': 1,
-      });
-    });
-  }
-
-  void deleteRule(int id) {
-    setState(() {
-      rules.removeWhere((rule) => rule['id'] == id);
-    });
-  }
-
-  void toggleRule(int id, bool enabled) {
-    setState(() {
-      final index = rules.indexWhere((rule) => rule['id'] == id);
-      if (index != -1) {
-        rules[index]['isEnabled'] = enabled ? 1 : 0;
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<AutomationRulesViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Automation Rules')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddRuleDialog(context),
+        onPressed: () => _showAddRuleDialog(context, viewModel),
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          if (!isAutoMode)
+          if (!viewModel.isAutoMode)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -89,18 +39,18 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
               ),
             ),
           Expanded(
-            child: isLoading
+            child: viewModel.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : rules.isEmpty
+                : viewModel.rules.isEmpty
                 ? const Center(child: Text('No automation rules defined'))
                 : ListView.builder(
-                    itemCount: rules.length,
+                    itemCount: viewModel.rules.length,
                     itemBuilder: (context, index) {
-                      final rule = rules[index];
+                      final rule = viewModel.rules[index];
                       return Dismissible(
                         key: Key(rule['id'].toString()),
                         background: Container(color: Colors.red),
-                        onDismissed: (_) => deleteRule(rule['id']),
+                        onDismissed: (_) => viewModel.deleteRule(rule['id']),
                         child: Card(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -122,7 +72,7 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
                                 Switch(
                                   value: rule['isEnabled'] == 1,
                                   onChanged: (val) =>
-                                      toggleRule(rule['id'], val),
+                                      viewModel.toggleRule(rule['id'], val),
                                 ),
                                 IconButton(
                                   icon: const Icon(
@@ -145,7 +95,7 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
                                           ),
                                           ElevatedButton(
                                             onPressed: () {
-                                              deleteRule(rule['id']);
+                                              viewModel.deleteRule(rule['id']);
                                               Navigator.pop(context);
                                             },
                                             style: ElevatedButton.styleFrom(
@@ -171,7 +121,10 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
     );
   }
 
-  void _showAddRuleDialog(BuildContext context) {
+  void _showAddRuleDialog(
+    BuildContext context,
+    AutomationRulesViewModel viewModel,
+  ) {
     String sensor = 'Temperature';
     String condition = '>';
     String actuator = 'fans';
@@ -239,7 +192,7 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
           ElevatedButton(
             onPressed: () {
               if (thresholdController.text.isNotEmpty) {
-                addRule(
+                viewModel.addRule(
                   sensor,
                   condition,
                   double.parse(thresholdController.text),

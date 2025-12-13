@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'password_recovery_screen.dart';
-import 'register_screen.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/login_viewmodel.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'register_screen.dart';
+import 'password_recovery_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +27,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Access the ViewModel provided by the MultiProvider in main.dart
+    final viewModel = Provider.of<LoginViewModel>(context);
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -67,25 +71,58 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 10),
 
-                  // Login Button (placeholder - no functionality yet)
+                  // Error Message Display
+                  if (viewModel.errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Text(
+                        viewModel.errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Login Button with Loading Indicator
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Implement login logic
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ),
+                    child: viewModel.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            onPressed: () async {
+                              // 1. Call the ViewModel login logic
+                              bool success = await viewModel.login(
+                                _emailController.text.trim(),
+                                _passwordController.text.trim(),
+                              );
+
+                              // 2. Navigate if successful
+                              if (success && mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const DashboardScreen(),
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
                   ),
 
                   const SizedBox(height: 10),
@@ -122,25 +159,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  // Skip Login Button for testing (only in debug mode)
-                  if (kDebugMode) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        // Navigate to Dashboard and replace the Login route so back won't return to it
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DashboardScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Skip Login (for testing)',
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

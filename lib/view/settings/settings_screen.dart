@@ -44,6 +44,13 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => viewModel.openAutomationRules(context),
           ),
+          ListTile(
+            leading: const Icon(Icons.developer_board),
+            title: const Text('Virtual Device Settings'),
+            subtitle: const Text('Configure simulation ranges'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => viewModel.openVirtualDeviceSettings(context),
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),

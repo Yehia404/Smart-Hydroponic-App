@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/registration_viewmodel.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -25,10 +28,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Access the ViewModel
+    final viewModel = Provider.of<RegistrationViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // Keeps your original style
         elevation: 0,
       ),
       body: Padding(
@@ -44,7 +50,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Full Name
+                // Full Name (Now properly sent to auth service)
                 TextField(
                   controller: _fullNameController,
                   decoration: const InputDecoration(
@@ -89,22 +95,56 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     prefixIcon: Icon(Icons.lock_outline),
                   ),
                 ),
+                const SizedBox(height: 10),
 
-                const SizedBox(height: 30),
+                // Error Message Display
+                if (viewModel.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    child: Text(
+                      viewModel.errorMessage!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
 
-                // Sign Up Button (placeholder - no functionality yet)
+                const SizedBox(height: 20),
+
+                // Sign Up Button with Loading State
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement registration logic
-                    },
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
+                  child: viewModel.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ElevatedButton(
+                          onPressed: () async {
+                            // Call the ViewModel to do the work
+                            bool success = await viewModel.register(
+                              _fullNameController.text.trim(),
+                              _emailController.text.trim(),
+                              _passwordController.text.trim(),
+                              _confirmPasswordController.text.trim(),
+                            );
+
+                            // If successful, log in and go to dashboard
+                            if (success && mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const DashboardScreen(),
+                                ),
+                                (route) => false, // Clear all previous routes
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'Sign Up',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ),
                 ),
               ],
             ),

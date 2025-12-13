@@ -12,13 +12,25 @@ import 'viewmodels/home_overview_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/user_profile_viewmodel.dart';
 import 'data/models/threshold_config.dart';
+import 'viewmodels/notification_settings_viewmodel.dart';
+import 'viewmodels/sensor_thresholds_viewmodel.dart';
+import 'viewmodels/control_panel_viewmodel.dart';
+import 'viewmodels/actuator_control_viewmodel.dart';
+import 'viewmodels/alerts_notifications_viewmodel.dart';
+import 'viewmodels/automation_rules_viewmodel.dart';
+import 'viewmodels/password_recovery_viewmodel.dart';
+import 'utils/virtual_device.dart';
+import 'viewmodels/virtual_device_settings_viewmodel.dart';
+import 'view/screens/splash_screen.dart';
+import 'viewmodels/splash_screen_viewmodel.dart';
+final VirtualDevice virtualHardware = VirtualDevice();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  virtualHardware.start();
   await ThresholdConfig.instance.init();
-
   runApp(const MyApp());
 }
 
@@ -31,6 +43,10 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(create: (_) => AuthService.instance),
         Provider<FirestoreService>(create: (_) => FirestoreService.instance),
+        ChangeNotifierProvider(
+          // Pass the AuthService to the ViewModel
+          create: (context) => SplashScreenViewModel(context.read<AuthService>()),
+        ),
 
         ChangeNotifierProvider(
           create: (context) => LoginViewModel(context.read<AuthService>()),
@@ -46,6 +62,28 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
         ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => NotificationSettingsViewModel()),
+        ChangeNotifierProvider(create: (_) => SensorThresholdsViewModel()),
+        ChangeNotifierProvider(create: (_) => ControlPanelViewModel()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              ActuatorControlViewModel(context.read<FirestoreService>()),
+        ),
+        ChangeNotifierProvider(create: (_) => AlertsNotificationsViewModel()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AutomationRulesViewModel(context.read<HomeOverviewViewModel>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => LoginViewModel(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              PasswordRecoveryViewModel(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VirtualDeviceSettingsViewModel(virtualHardware),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -69,7 +107,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const LoginScreen(),
+        home: const SplashScreen(),
       ),
     );
   }

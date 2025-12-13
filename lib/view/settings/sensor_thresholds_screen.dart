@@ -1,67 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/sensor_thresholds_viewmodel.dart';
 
-class SensorThresholdsScreen extends StatefulWidget {
+class SensorThresholdsScreen extends StatelessWidget {
   const SensorThresholdsScreen({super.key});
 
   @override
-  State<SensorThresholdsScreen> createState() => _SensorThresholdsScreenState();
-}
-
-class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
-  bool isLoading = false;
-  double minTemp = 18.0;
-  double maxTemp = 30.0;
-  double minWaterLevel = 20.0;
-  double minPh = 5.5;
-  double maxPh = 7.5;
-  double minTds = 500.0;
-  double maxTds = 1500.0;
-  double minLight = 30.0;
-  double minHumidity = 40.0;
-  double maxHumidity = 80.0;
-
-  void saveThreshold(String sensor, String type, double value) {
-    setState(() {
-      switch ('${sensor}_$type') {
-        case 'temperature_min':
-          minTemp = value;
-          break;
-        case 'temperature_max':
-          maxTemp = value;
-          break;
-        case 'water_level_min':
-          minWaterLevel = value;
-          break;
-        case 'ph_min':
-          minPh = value;
-          break;
-        case 'ph_max':
-          maxPh = value;
-          break;
-        case 'tds_min':
-          minTds = value;
-          break;
-        case 'tds_max':
-          maxTds = value;
-          break;
-        case 'light_intensity_min':
-          minLight = value;
-          break;
-        case 'humidity_min':
-          minHumidity = value;
-          break;
-        case 'humidity_max':
-          maxHumidity = value;
-          break;
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<SensorThresholdsViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Sensor Thresholds')),
-      body: isLoading
+      body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -74,19 +24,21 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   [
                     _buildSlider(
                       context,
+                      viewModel,
                       'Min Temp',
                       'temperature',
                       'min',
-                      minTemp,
+                      viewModel.minTemp,
                       0,
                       50,
                     ),
                     _buildSlider(
                       context,
+                      viewModel,
                       'Max Temp',
                       'temperature',
                       'max',
-                      maxTemp,
+                      viewModel.maxTemp,
                       0,
                       50,
                     ),
@@ -100,10 +52,11 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   [
                     _buildSlider(
                       context,
+                      viewModel,
                       'Min Level',
                       'water_level',
                       'min',
-                      minWaterLevel,
+                      viewModel.minWaterLevel,
                       0,
                       100,
                     ),
@@ -115,8 +68,26 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   Icons.science,
                   Colors.purple,
                   [
-                    _buildSlider(context, 'Min pH', 'ph', 'min', minPh, 0, 14),
-                    _buildSlider(context, 'Max pH', 'ph', 'max', maxPh, 0, 14),
+                    _buildSlider(
+                      context,
+                      viewModel,
+                      'Min pH',
+                      'ph',
+                      'min',
+                      viewModel.minPh,
+                      0,
+                      14,
+                    ),
+                    _buildSlider(
+                      context,
+                      viewModel,
+                      'Max pH',
+                      'ph',
+                      'max',
+                      viewModel.maxPh,
+                      0,
+                      14,
+                    ),
                   ],
                 ),
                 _buildThresholdCard(
@@ -127,19 +98,21 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   [
                     _buildSlider(
                       context,
+                      viewModel,
                       'Min TDS',
                       'tds',
                       'min',
-                      minTds,
+                      viewModel.minTds,
                       0,
                       2000,
                     ),
                     _buildSlider(
                       context,
+                      viewModel,
                       'Max TDS',
                       'tds',
                       'max',
-                      maxTds,
+                      viewModel.maxTds,
                       0,
                       2000,
                     ),
@@ -153,10 +126,11 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   [
                     _buildSlider(
                       context,
+                      viewModel,
                       'Min Light',
                       'light_intensity',
                       'min',
-                      minLight,
+                      viewModel.minLight,
                       0,
                       100,
                     ),
@@ -170,19 +144,21 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
                   [
                     _buildSlider(
                       context,
+                      viewModel,
                       'Min Humidity',
                       'humidity',
                       'min',
-                      minHumidity,
+                      viewModel.minHumidity,
                       0,
                       100,
                     ),
                     _buildSlider(
                       context,
+                      viewModel,
                       'Max Humidity',
                       'humidity',
                       'max',
-                      maxHumidity,
+                      viewModel.maxHumidity,
                       0,
                       100,
                     ),
@@ -230,6 +206,7 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
 
   Widget _buildSlider(
     BuildContext context,
+    SensorThresholdsViewModel viewModel,
     String label,
     String sensor,
     String type,
@@ -256,7 +233,8 @@ class _SensorThresholdsScreenState extends State<SensorThresholdsScreen> {
           max: max,
           divisions: (max - min).toInt(),
           label: value.toStringAsFixed(1),
-          onChanged: (newValue) => saveThreshold(sensor, type, newValue),
+          onChanged: (newValue) =>
+              viewModel.saveThreshold(sensor, type, newValue),
         ),
       ],
     );

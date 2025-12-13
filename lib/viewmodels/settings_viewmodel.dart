@@ -6,6 +6,7 @@ import '../view/settings/sensor_thresholds_screen.dart';
 import '../view/settings/notification_settings_screen.dart';
 import '../view/settings/automation_rules_screen.dart';
 import '../view/settings/user_profile_screen.dart';
+import '../view/settings/virtual_device_settings_screen.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService.instance;
@@ -37,6 +38,15 @@ class SettingsViewModel extends ChangeNotifier {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SensorThresholdsScreen()),
+    );
+  }
+
+  void openVirtualDeviceSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const VirtualDeviceSettingsScreen(),
+      ),
     );
   }
 
