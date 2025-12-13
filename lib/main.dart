@@ -19,13 +19,17 @@ import 'viewmodels/actuator_control_viewmodel.dart';
 import 'viewmodels/alerts_notifications_viewmodel.dart';
 import 'viewmodels/automation_rules_viewmodel.dart';
 import 'viewmodels/password_recovery_viewmodel.dart';
+import 'utils/virtual_device.dart';
+import 'viewmodels/virtual_device_settings_viewmodel.dart';
+
+final VirtualDevice virtualHardware = VirtualDevice();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  virtualHardware.start();
   await ThresholdConfig.instance.init();
-
   runApp(const MyApp());
 }
 
@@ -71,6 +75,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) =>
               PasswordRecoveryViewModel(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VirtualDeviceSettingsViewModel(virtualHardware),
         ),
       ],
       child: MaterialApp(

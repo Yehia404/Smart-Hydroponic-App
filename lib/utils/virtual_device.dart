@@ -18,6 +18,20 @@ class VirtualDevice {
   bool _pumpIsActive = false;
   bool _lightsAreActive = false;
 
+  // Configurable sensor ranges
+  double tempMin = 22.0;
+  double tempMax = 27.0;
+  double phMin = 6.5;
+  double phMax = 7.5;
+  double waterLevelMin = 80.0;
+  double waterLevelMax = 100.0;
+  double lightMin = 60.0;
+  double lightMax = 100.0;
+  double tdsMin = 800.0;
+  double tdsMax = 1200.0;
+  double humidityMin = 50.0;
+  double humidityMax = 70.0;
+
   /// Starts the background simulation loop
   void start() {
     debugPrint("🔌 VIRTUAL DEVICE: Started. Simulating hardware...");
@@ -39,15 +53,45 @@ class VirtualDevice {
     debugPrint("🔌 VIRTUAL DEVICE: Stopped.");
   }
 
+  /// Updates the sensor simulation ranges
+  void updateRanges({
+    required double tempMin,
+    required double tempMax,
+    required double phMin,
+    required double phMax,
+    required double waterLevelMin,
+    required double waterLevelMax,
+    required double lightMin,
+    required double lightMax,
+    required double tdsMin,
+    required double tdsMax,
+    required double humidityMin,
+    required double humidityMax,
+  }) {
+    this.tempMin = tempMin;
+    this.tempMax = tempMax;
+    this.phMin = phMin;
+    this.phMax = phMax;
+    this.waterLevelMin = waterLevelMin;
+    this.waterLevelMax = waterLevelMax;
+    this.lightMin = lightMin;
+    this.lightMax = lightMax;
+    this.tdsMin = tdsMin;
+    this.tdsMax = tdsMax;
+    this.humidityMin = humidityMin;
+    this.humidityMax = humidityMax;
+    debugPrint("🔌 VIRTUAL DEVICE: Ranges updated - Temp: $tempMin-$tempMax°C, pH: $phMin-$phMax");
+  }
+
   /// Generates random data and PUSHES it to Firestore
   Future<void> _simulateSensorReadings() async {
-    // Generate realistic fluctuating data
-    double temp = 22.0 + _random.nextDouble() * 5; // 22-27°C
-    double ph = 6.5 + _random.nextDouble() * 1.0; // 6.5-7.5
-    int waterLevel = 80 + _random.nextInt(20); // 80-100%
-    int light = 60 + _random.nextInt(40); // 60-100%
-    int tds = 800 + _random.nextInt(400); // 800-1200 ppm
-    int humidity = 50 + _random.nextInt(20); // 50-70%
+    // Generate realistic fluctuating data using configurable ranges
+    double temp = tempMin + _random.nextDouble() * (tempMax - tempMin);
+    double ph = phMin + _random.nextDouble() * (phMax - phMin);
+    int waterLevel = waterLevelMin.toInt() + _random.nextInt((waterLevelMax - waterLevelMin).toInt());
+    int light = lightMin.toInt() + _random.nextInt((lightMax - lightMin).toInt());
+    int tds = tdsMin.toInt() + _random.nextInt((tdsMax - tdsMin).toInt());
+    int humidity = humidityMin.toInt() + _random.nextInt((humidityMax - humidityMin).toInt());
 
     try {
       final data = {
