@@ -21,7 +21,8 @@ import 'viewmodels/automation_rules_viewmodel.dart';
 import 'viewmodels/password_recovery_viewmodel.dart';
 import 'utils/virtual_device.dart';
 import 'viewmodels/virtual_device_settings_viewmodel.dart';
-
+import 'view/screens/splash_screen.dart';
+import 'viewmodels/splash_screen_viewmodel.dart';
 final VirtualDevice virtualHardware = VirtualDevice();
 
 void main() async {
@@ -42,6 +43,10 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(create: (_) => AuthService.instance),
         Provider<FirestoreService>(create: (_) => FirestoreService.instance),
+        ChangeNotifierProvider(
+          // Pass the AuthService to the ViewModel
+          create: (context) => SplashScreenViewModel(context.read<AuthService>()),
+        ),
 
         ChangeNotifierProvider(
           create: (context) => LoginViewModel(context.read<AuthService>()),
@@ -102,7 +107,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const LoginScreen(),
+        home: const SplashScreen(),
       ),
     );
   }
