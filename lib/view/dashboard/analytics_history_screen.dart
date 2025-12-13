@@ -99,6 +99,8 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
                 _buildStatisticsCards(),
                 const SizedBox(height: 30),
                 _buildTrendAnalysis(),
+                const SizedBox(height: 30),
+                _buildHistoricalDataTable(), // Added the new table here
               ],
             ),
     );
@@ -487,6 +489,79 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // --- NEW CODE ADDED FOR COMMIT 1 ---
+
+  Widget _buildHistoricalDataTable() {
+    // USING LOCAL VARIABLES FOR NOW (INCREMENTAL COMMIT)
+    final data = _getDummyData(); 
+    final sensorInfo = _getSensorInfo(_selectedSensor);
+    
+    if (data.isEmpty) return const SizedBox.shrink();
+
+    // Show last 10 data points
+    final recentData = data.reversed.take(10).toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recent Historical Data',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Table(
+              border: TableBorder.all(color: Colors.grey[300]!),
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(color: Colors.grey[200]),
+                  children: [
+                    _buildTableCell('Timestamp', isHeader: true),
+                    _buildTableCell('Value', isHeader: true),
+                  ],
+                ),
+                ...recentData.map((point) {
+                  return TableRow(
+                    children: [
+                      _buildTableCell(DateFormat('MMM d, HH:mm:ss').format(point.timestamp)),
+                      _buildTableCell('${point.value.toStringAsFixed(2)} ${sensorInfo['unit']}'),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'Showing last 10 of ${data.length} data points',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, {bool isHeader = false}) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+          fontSize: isHeader ? 14 : 13,
+        ),
+      ),
     );
   }
 
