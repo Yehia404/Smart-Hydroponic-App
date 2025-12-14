@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'notification_service.dart';
+import 'sqlite_service.dart';
+import '../models/alert.dart';
 
 /// Represents the health status of an actuator
 enum ActuatorHealth {
@@ -179,14 +182,82 @@ class ActuatorHealthMonitor extends ChangeNotifier {
     _failureHistory.add(failure);
     
     debugPrint('⚠️ ACTUATOR FAILURE DETECTED: $failure');
+    
+    // Send notification and log alert
+    _sendActuatorFailureNotification(actuatorName, reason);
+    
     notifyListeners();
   }
 
+  /// Send notification when actuator fails
+  void _sendActuatorFailureNotification(String actuatorName, String reason) async {
+    try {
+      // Create alert for the failure
+      final alert = Alert(
+        sensorName: '⚠️ $actuatorName Failure',
+        message: reason,
+        severity: 'critical',
+        timestamp: DateTime.now(),
+      );
+
+      // Log to database
+      int alertId = await SqliteService.instance.logAlert(alert);
+
+      // Send phone notification
+      await NotificationService.instance.showNotification(
+        id: alertId,
+        title: '$actuatorName Not Responding',
+        body: reason,
+        isCritical: true,
+      );
+
+      debugPrint('📢 Actuator failure notification sent for $actuatorName');
+    } catch (e) {
+      debugPrint('❌ Error sending actuator failure notification: $e');
+    }
+  }
+
   void _markHealthy(String actuator) {
-    if (_actuatorHealth[actuator] != ActuatorHealth.healthy) {
+    // Check if actuator was previously failed (so we can send recovery notification)
+    bool wasUnhealthy = _actuatorHealth[actuator] != ActuatorHealth.healthy;
+    
+    if (wasUnhealthy) {
       _actuatorHealth[actuator] = ActuatorHealth.healthy;
       _lastThresholdViolation.remove(actuator);
+      
+      // Send recovery notification
+      _sendActuatorRecoveryNotification(actuator);
+      
       notifyListeners();
+    }
+  }
+
+  /// Send notification when actuator recovers
+  void _sendActuatorRecoveryNotification(String actuator) async {
+    try {
+      String actuatorName = actuator.substring(0, 1).toUpperCase() + actuator.substring(1);
+      
+      final alert = Alert(
+        sensorName: '✅ $actuatorName Recovered',
+        message: '$actuatorName is now responding normally.',
+        severity: 'info',
+        timestamp: DateTime.now(),
+      );
+
+      // Log to database
+      int alertId = await SqliteService.instance.logAlert(alert);
+
+      // Send phone notification
+      await NotificationService.instance.showNotification(
+        id: alertId,
+        title: '$actuatorName Back Online',
+        body: '$actuatorName is now responding normally.',
+        isCritical: false,
+      );
+
+      debugPrint('✅ Actuator recovery notification sent for $actuator');
+    } catch (e) {
+      debugPrint('❌ Error sending actuator recovery notification: $e');
     }
   }
 

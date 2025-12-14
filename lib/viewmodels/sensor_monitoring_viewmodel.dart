@@ -44,8 +44,12 @@ class SensorMonitoringViewModel extends ChangeNotifier {
   }
 
   void calibrateSensor(String sensorName) {
-    // TODO: Implement calibration logic
-    // This would typically call a service to calibrate the sensor
+    // Calibration has been applied via the SensorCalibration singleton
+    // This method can be used for additional logging or persistence
+    debugPrint('✅ Sensor calibration applied for: $sensorName');
+    
+    // Optionally refresh sensor data to show calibrated values
+    refreshSensorData();
   }
 
   void toggleAutoUpdate() {

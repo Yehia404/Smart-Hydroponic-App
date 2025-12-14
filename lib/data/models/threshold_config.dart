@@ -58,42 +58,59 @@ class ThresholdConfig {
   // --- CHECKER FUNCTIONS ---
 
   AlertStatus checkTemperature(double value) {
-    if (value > maxTemp) return AlertStatus.criticalHigh;
-    if (value < minTemp) return AlertStatus.warningLow;
+    if (value > maxTemp + 3) return AlertStatus.criticalHigh;  // Very high
+    if (value > maxTemp) return AlertStatus.warningHigh;       // Moderately high
+    if (value < minTemp - 3) return AlertStatus.criticalLow;   // Very low
+    if (value < minTemp) return AlertStatus.warningLow;        // Moderately low
+    if (value > maxTemp - 2 || value < minTemp + 2) return AlertStatus.info;  // Getting close to limits
     return AlertStatus.normal;
   }
 
   AlertStatus checkWaterLevel(double value) {
-    if (value < minWaterLevel) return AlertStatus.criticalLow;
+    if (value < minWaterLevel - 20) return AlertStatus.criticalLow;  // Very low
+    if (value < minWaterLevel) return AlertStatus.warningLow;         // Low
+    if (value < minWaterLevel + 10) return AlertStatus.info;          // Getting low
     return AlertStatus.normal;
   }
 
   AlertStatus checkPh(double value) {
-    if (value < minPh) return AlertStatus.warningLow;
-    if (value > maxPh) return AlertStatus.warningHigh;
+    if (value < minPh - 0.5) return AlertStatus.criticalLow;    // Very acidic
+    if (value > maxPh + 0.5) return AlertStatus.criticalHigh;   // Very alkaline
+    if (value < minPh) return AlertStatus.warningLow;            // Acidic
+    if (value > maxPh) return AlertStatus.warningHigh;           // Alkaline
+    if (value < minPh + 0.3 || value > maxPh - 0.3) return AlertStatus.info;  // Near limits
     return AlertStatus.normal;
   }
 
   AlertStatus checkTds(double value) {
-    if (value < minTds) return AlertStatus.warningLow;
-    if (value > maxTds) return AlertStatus.criticalHigh;
+    if (value > maxTds + 200) return AlertStatus.criticalHigh;  // Very high nutrients
+    if (value > maxTds) return AlertStatus.warningHigh;         // High nutrients
+    if (value < minTds - 100) return AlertStatus.criticalLow;   // Very low nutrients
+    if (value < minTds) return AlertStatus.warningLow;          // Low nutrients
+    if (value > maxTds - 100 || value < minTds + 100) return AlertStatus.info;  // Near limits
     return AlertStatus.normal;
   }
 
   AlertStatus checkLight(double value) {
-    if (value < minLight) return AlertStatus.warningLow;
+    if (value < minLight - 15) return AlertStatus.criticalLow;  // Very dark
+    if (value < minLight) return AlertStatus.warningLow;         // Dark
+    if (value < minLight + 10) return AlertStatus.info;          // Getting dark
     return AlertStatus.normal;
   }
 
   AlertStatus checkHumidity(double value) {
-    if (value < minHumidity) return AlertStatus.warningLow;
-    if (value > maxHumidity) return AlertStatus.warningHigh;
+    if (value < minHumidity - 10) return AlertStatus.criticalLow;   // Very dry
+    if (value > maxHumidity + 10) return AlertStatus.criticalHigh;  // Very humid
+    if (value < minHumidity) return AlertStatus.warningLow;          // Dry
+    if (value > maxHumidity) return AlertStatus.warningHigh;         // Humid
+    if (value < minHumidity + 5 || value > maxHumidity - 5) return AlertStatus.info;  // Near limits
     return AlertStatus.normal;
   }
 }
 
 enum AlertStatus {
   normal,
+  info,
   warningLow,
   warningHigh,
   criticalLow,
