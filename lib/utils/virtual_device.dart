@@ -17,6 +17,7 @@ class VirtualDevice {
   // Internal state of our "Hardware"
   bool _pumpIsActive = false;
   bool _lightsAreActive = false;
+  bool _fansAreActive = false;
 
   // Configurable sensor ranges
   double tempMin = 22.0;
@@ -40,9 +41,7 @@ class VirtualDevice {
     _listenForControls();
 
     // Run the simulation loop every 5 seconds (Real-time!)
-    _simulationTimer = Timer.periodic(const Duration(seconds: 5), (
-      timer,
-    ) async {
+    _simulationTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       await _simulateSensorReadings();
     });
   }
@@ -85,10 +84,38 @@ class VirtualDevice {
 
   /// Generates random data and PUSHES it to Firestore
   Future<void> _simulateSensorReadings() async {
-    // Generate realistic fluctuating data using configurable ranges
-    double temp = tempMin + _random.nextDouble() * (tempMax - tempMin);
+    // --- DYNAMIC RANGE ADJUSTMENTS BASED ON ACTUATOR STATES ---
+
+    // Temperature adjustments
+    double effectiveTempMin = tempMin;
+    double effectiveTempMax = tempMax;
+
+    // FANS ON → Cooling effect (reduce temperature range by 3°C)
+    if (_fansAreActive) {
+      effectiveTempMin -= 3.0;
+      effectiveTempMax -= 3.0;
+    }
+
+    // LIGHTS ON → Heating effect (increase temperature range by 2°C)
+    if (_lightsAreActive) {
+      effectiveTempMin += 2.0;
+      effectiveTempMax += 2.0;
+    }
+
+    // Water Level adjustments
+    double effectiveWaterMin = waterLevelMin;
+    double effectiveWaterMax = waterLevelMax;
+
+    // PUMP ON → Increases water level range (shift up by 10%)
+    if (_pumpIsActive) {
+      effectiveWaterMin = (waterLevelMin + 10.0).clamp(0.0, 100.0);
+      effectiveWaterMax = 100.0; // Pump keeps reservoir fuller
+    }
+
+    // Generate realistic fluctuating data using adjusted ranges
+    double temp = effectiveTempMin + _random.nextDouble() * (effectiveTempMax - effectiveTempMin);
     double ph = phMin + _random.nextDouble() * (phMax - phMin);
-    int waterLevel = waterLevelMin.toInt() + _random.nextInt((waterLevelMax - waterLevelMin).toInt());
+    int waterLevel = effectiveWaterMin.toInt() + _random.nextInt((effectiveWaterMax - effectiveWaterMin).toInt());
     int light = lightMin.toInt() + _random.nextInt((lightMax - lightMin).toInt());
     int tds = tdsMin.toInt() + _random.nextInt((tdsMax - tdsMin).toInt());
     int humidity = humidityMin.toInt() + _random.nextInt((humidityMax - humidityMin).toInt());
@@ -111,17 +138,15 @@ class VirtualDevice {
           .set(data, SetOptions(merge: true));
 
       // 2. Add to History (Readings Collection)
+      // FIX: This section was broken in your original file
       await _firestore
           .collection('devices')
           .doc(_deviceId)
           .collection('readings')
-          .add({...data, 'timestamp': FieldValue.serverTimestamp()});
+          .add(data);
 
-      debugPrint(
-        "🔌 VIRTUAL DEVICE: 📤 Data Sent (Temp: ${temp.toStringAsFixed(1)}°C)",
-      );
     } catch (e) {
-      debugPrint("🔌 VIRTUAL DEVICE: ❌ Error sending data: $e");
+      debugPrint("🔌 VIRTUAL DEVICE: Error sending data: $e");
     }
   }
 
@@ -140,19 +165,21 @@ class VirtualDevice {
               if (actuators != null) {
                 bool newPumpState = actuators['pump'] ?? false;
                 bool newLightState = actuators['lights'] ?? false;
+                bool newFansState = actuators['fans'] ?? false; // FIX: Added missing fan logic
 
                 if (newPumpState != _pumpIsActive) {
                   _pumpIsActive = newPumpState;
-                  debugPrint(
-                    "🔌 VIRTUAL DEVICE: 🚿 PUMP is now ${_pumpIsActive ? 'ON' : 'OFF'}",
-                  );
+                  debugPrint("🔌 VIRTUAL DEVICE: 🚿 PUMP is now ${_pumpIsActive ? 'ON' : 'OFF'}");
                 }
 
                 if (newLightState != _lightsAreActive) {
                   _lightsAreActive = newLightState;
-                  debugPrint(
-                    "🔌 VIRTUAL DEVICE: 💡 LIGHTS are now ${_lightsAreActive ? 'ON' : 'OFF'}",
-                  );
+                  debugPrint("🔌 VIRTUAL DEVICE: 💡 LIGHTS are now ${_lightsAreActive ? 'ON' : 'OFF'}");
+                }
+
+                if (newFansState != _fansAreActive) {
+                  _fansAreActive = newFansState;
+                  debugPrint("🔌 VIRTUAL DEVICE: 🌀 FANS are now ${_fansAreActive ? 'ON' : 'OFF'}");
                 }
               }
             }
