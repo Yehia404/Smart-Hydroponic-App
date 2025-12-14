@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../data/services/firestore_service.dart';
+
 
 class AnalyticsHistoryViewModel extends ChangeNotifier {
   BuildContext? _context;
@@ -155,7 +159,6 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
     final avg = values.reduce((a, b) => a + b) / values.length;
     final current = values.last;
     
-    
     final trend = current - avg;
 
     return SensorStats(
@@ -167,7 +170,93 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
       unit: unit,
     );
   }
+
+  Future<bool> _requestStoragePermission() async {
+    if (!Platform.isAndroid) return true;
+
+    // Check Android version
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    if (androidInfo.version.sdkInt >= 33) {
+      // On Android 13+ (API 33+), storage permissions are not needed for app-specific directories
+      // or public Downloads if using the right APIs.
+      return true;
+    }
+
+    // Check current permission status
+    PermissionStatus status = await Permission.storage.status;
+    
+    if (status.isGranted) return true;
+
+    // Show explanation dialog
+    if (_context != null && _context!.mounted) {
+      bool? shouldRequest = await showDialog<bool>(
+        context: _context!,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Storage Permission Required'),
+            content: const Text(
+              'This app needs access to storage to save the CSV file to your Downloads folder. '
+              'Please grant storage permission in the next dialog.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Grant Permission'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldRequest != true) return false;
+    }
+
+    // Request permission
+    status = await Permission.storage.request();
+    
+    if (status.isGranted) return true;
+
+    // Handle denial
+    if (status.isPermanentlyDenied) {
+      if (_context != null && _context!.mounted) {
+        final shouldOpenSettings = await showDialog<bool>(
+          context: _context!,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Permission Denied'),
+              content: const Text(
+                'Storage permission is permanently denied. '
+                'Please enable it in app settings to save files.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            );
+          },
+        );
+        
+        if (shouldOpenSettings == true) {
+          await openAppSettings();
+        }
+      }
+      return false;
+    }
+
+    return false;
+  }
 }
+
 
 
 class DataPoint {
