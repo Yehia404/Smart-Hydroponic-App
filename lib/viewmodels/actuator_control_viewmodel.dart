@@ -1,23 +1,65 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/services/firestore_service.dart';
+import '../data/services/local_cache_service.dart';
 
 /// Shared ViewModel for actuator controls
 /// This ensures pump, lights, and fans state is synchronized across all screens
 class ActuatorControlViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
+  final LocalCacheService _cacheService = LocalCacheService.instance;
 
   bool _isPumpOn = false;
   bool _areLightsOn = false;
   bool _areFansOn = false;
+  bool _isInitialized = false;
 
   StreamSubscription? _actuatorSubscription;
 
   bool get isPumpOn => _isPumpOn;
   bool get areLightsOn => _areLightsOn;
   bool get areFansOn => _areFansOn;
+  bool get isInitialized => _isInitialized;
 
   ActuatorControlViewModel(this._firestoreService) {
+    _initializeActuatorStates();
+  }
+
+  /// Initialize actuator states from local cache first, then listen to Firestore
+  Future<void> _initializeActuatorStates() async {
+    // 1. Load cached states immediately (fast, offline-available)
+    final cachedStates = _cacheService.getCachedActuatorStates();
+    _isPumpOn = cachedStates['pump'] ?? false;
+    _areLightsOn = cachedStates['lights'] ?? false;
+    _areFansOn = cachedStates['fans'] ?? false;
+    debugPrint('💾 ACTUATORS: Loaded from cache - Pump=$_isPumpOn, Lights=$_areLightsOn, Fans=$_areFansOn');
+    notifyListeners();
+
+    // 2. Fetch current state from Firestore (authoritative source)
+    try {
+      final firestoreStates = await _firestoreService.getActuatorStates();
+      if (firestoreStates != null) {
+        _isPumpOn = firestoreStates['pump'] ?? false;
+        _areLightsOn = firestoreStates['lights'] ?? false;
+        _areFansOn = firestoreStates['fans'] ?? false;
+        
+        // Save to cache for next app launch
+        await _cacheService.saveActuatorStates(
+          isPumpOn: _isPumpOn,
+          areLightsOn: _areLightsOn,
+          areFansOn: _areFansOn,
+        );
+        
+        debugPrint('🔥 ACTUATORS: Loaded from Firestore - Pump=$_isPumpOn, Lights=$_areLightsOn, Fans=$_areFansOn');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('⚠️ ACTUATORS: Failed to load from Firestore, using cached values: $e');
+    }
+
+    _isInitialized = true;
+
+    // 3. Start listening for real-time changes
     _listenToActuatorChanges();
   }
 
@@ -29,6 +71,14 @@ class ActuatorControlViewModel extends ChangeNotifier {
         _isPumpOn = actuators['pump'] ?? false;
         _areLightsOn = actuators['lights'] ?? false;
         _areFansOn = actuators['fans'] ?? false;
+        
+        // Update local cache
+        _cacheService.saveActuatorStates(
+          isPumpOn: _isPumpOn,
+          areLightsOn: _areLightsOn,
+          areFansOn: _areFansOn,
+        );
+        
         notifyListeners();
         debugPrint(
           '🔄 Actuator states synced: Pump=$_isPumpOn, Lights=$_areLightsOn, Fans=$_areFansOn',

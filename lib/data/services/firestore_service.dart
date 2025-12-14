@@ -107,6 +107,53 @@ class FirestoreService {
     });
   }
 
+  /// Gets the current actuator states from Firestore (one-time fetch)
+  Future<Map<String, bool>?> getActuatorStates() async {
+    try {
+      final snapshot = await _firestore.collection('devices').doc(_deviceId).get();
+      
+      if (!snapshot.exists || snapshot.data() == null) {
+        return {'pump': false, 'lights': false, 'fans': false};
+      }
+
+      final data = snapshot.data()!;
+      final actuators = data['actuators'] as Map<String, dynamic>? ?? {};
+
+      return {
+        'pump': actuators['pump'] == true,
+        'lights': actuators['lights'] == true,
+        'fans': actuators['fans'] == true,
+      };
+    } catch (e) {
+      debugPrint('Error fetching actuator states: $e');
+      return null;
+    }
+  }
+
+  /// Gets the current sensor readings from Firestore (one-time fetch)
+  Future<Map<String, dynamic>?> getSensorReadings() async {
+    try {
+      final snapshot = await _firestore.collection('devices').doc(_deviceId).get();
+      
+      if (!snapshot.exists || snapshot.data() == null) {
+        return null;
+      }
+
+      final data = snapshot.data()!;
+      return {
+        'temperature': data['temperature'] ?? 0.0,
+        'ph': data['ph'] ?? 0.0,
+        'water_level': data['water_level'] ?? 0,
+        'light_intensity': data['light_intensity'] ?? 0,
+        'tds': data['tds'] ?? 0,
+        'humidity': data['humidity'] ?? 0,
+      };
+    } catch (e) {
+      debugPrint('Error fetching sensor readings: $e');
+      return null;
+    }
+  }
+
   /// Updates an actuator state in Firestore
   Future<void> updateActuator(String actuatorId, bool isOn) async {
     try {

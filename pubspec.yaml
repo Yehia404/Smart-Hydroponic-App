@@ -49,6 +49,7 @@ dependencies:
   speech_to_text: ^7.0.0
   cloud_firestore: ^6.1.0
   device_info_plus: ^12.3.0
+  shared_preferences: ^2.3.3
 
  
 

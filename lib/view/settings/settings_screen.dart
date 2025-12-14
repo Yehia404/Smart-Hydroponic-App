@@ -58,6 +58,13 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => viewModel.openVirtualDeviceSettings(context),
           ),
+          ListTile(
+            leading: const Icon(Icons.health_and_safety_outlined),
+            title: const Text('Actuator Health'),
+            subtitle: const Text('Monitor actuator failures'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => viewModel.openActuatorHealth(context),
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),

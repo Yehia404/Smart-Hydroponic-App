@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/services/firestore_service.dart';
 import '../data/services/settings_service.dart';
+import '../data/services/local_cache_service.dart';
 import '../data/models/sensor_data.dart';
 
 class HomeOverviewViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
   final SettingsService _settingsService = SettingsService.instance;
+  final LocalCacheService _cacheService = LocalCacheService.instance;
 
   bool _isSystemOnline = true;
   String _currentMode = 'automatic';
@@ -22,10 +24,52 @@ class HomeOverviewViewModel extends ChangeNotifier {
 
   HomeOverviewViewModel(this._firestoreService) {
     _loadAutomationRules();
+    _loadCachedSensorData(); // Load cached data first
     _startListeningToSensors();
   }
 
   List<Map<String, dynamic>> get sensorSummary => _sensorSummary;
+
+  /// Load cached sensor data to show immediately while waiting for Firestore
+  void _loadCachedSensorData() {
+    if (_cacheService.hasCachedData) {
+      final cached = _cacheService.getCachedSensorReadings();
+      debugPrint('💾 SENSORS: Loading from cache...');
+      
+      // Build sensor summary from cached data
+      _sensorSummary = [
+        {
+          'name': 'Temperature',
+          'value': cached['temperature'].toString(),
+          'unit': '°C',
+          'icon': Icons.thermostat,
+          'color': Colors.orange,
+        },
+        {
+          'name': 'Ph',
+          'value': cached['ph'].toString(),
+          'unit': '',
+          'icon': Icons.science_outlined,
+          'color': Colors.blue,
+        },
+        {
+          'name': 'Water Level',
+          'value': cached['water_level'].toString(),
+          'unit': '%',
+          'icon': Icons.water_drop,
+          'color': Colors.lightBlue,
+        },
+        {
+          'name': 'Light Intensity',
+          'value': cached['light_intensity'].toString(),
+          'unit': '%',
+          'icon': Icons.lightbulb_outline,
+          'color': Colors.yellow.shade700,
+        },
+      ];
+      notifyListeners();
+    }
+  }
 
   Future<void> _loadAutomationRules() async {
     _automationRules = await _settingsService.getRules();
@@ -47,6 +91,9 @@ class HomeOverviewViewModel extends ChangeNotifier {
           'color': sensor.color,
         }).toList();
 
+        // Cache sensor readings for next app launch
+        _cacheSensorData(sensorDataList);
+
         // Execute automation rules if in automatic mode
         if (_currentMode == 'automatic') {
           _executeAutomationRules(sensorDataList);
@@ -58,6 +105,54 @@ class HomeOverviewViewModel extends ChangeNotifier {
         print('Error loading sensor data: $error');
       },
     );
+  }
+
+  /// Cache sensor data locally for offline/quick access
+  void _cacheSensorData(List<SensorData> sensorDataList) {
+    try {
+      // Extract values from sensor data list
+      double temperature = 0.0;
+      double ph = 0.0;
+      int waterLevel = 0;
+      int lightIntensity = 0;
+      int tds = 0;
+      int humidity = 0;
+
+      for (var sensor in sensorDataList) {
+        final value = double.tryParse(sensor.value) ?? 0.0;
+        switch (sensor.name.toLowerCase()) {
+          case 'temperature':
+            temperature = value;
+            break;
+          case 'ph':
+            ph = value;
+            break;
+          case 'water level':
+            waterLevel = value.toInt();
+            break;
+          case 'light intensity':
+            lightIntensity = value.toInt();
+            break;
+          case 'tds':
+            tds = value.toInt();
+            break;
+          case 'humidity':
+            humidity = value.toInt();
+            break;
+        }
+      }
+
+      _cacheService.saveSensorReadings(
+        temperature: temperature,
+        ph: ph,
+        waterLevel: waterLevel,
+        lightIntensity: lightIntensity,
+        tds: tds,
+        humidity: humidity,
+      );
+    } catch (e) {
+      debugPrint('Error caching sensor data: $e');
+    }
   }
 
   void _executeAutomationRules(List<SensorData> sensorDataList) {

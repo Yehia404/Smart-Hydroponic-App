@@ -5,6 +5,7 @@ import 'package:smart_hydroponic_app/view/auth/login_screen.dart';
 import 'firebase_options.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/firestore_service.dart';
+import 'data/services/local_cache_service.dart';
 import 'viewmodels/login_viewmodel.dart';
 import 'viewmodels/registration_viewmodel.dart';
 import 'viewmodels/navigation_viewmodel.dart';
@@ -24,12 +25,14 @@ import 'viewmodels/virtual_device_settings_viewmodel.dart';
 import 'view/screens/splash_screen.dart';
 import 'viewmodels/splash_screen_viewmodel.dart';
 import 'viewmodels/sensor_calibration_viewmodel.dart';
+import 'viewmodels/actuator_health_viewmodel.dart';
 final VirtualDevice virtualHardware = VirtualDevice();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LocalCacheService.instance.init(); // Initialize local cache
   virtualHardware.start();
   await ThresholdConfig.instance.init();
   runApp(const MyApp());
@@ -86,6 +89,7 @@ class MyApp extends StatelessWidget {
           create: (_) => VirtualDeviceSettingsViewModel(virtualHardware),
         ),
         ChangeNotifierProvider(create: (_) => SensorCalibrationViewModel()),
+        ChangeNotifierProvider(create: (_) => ActuatorHealthViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
