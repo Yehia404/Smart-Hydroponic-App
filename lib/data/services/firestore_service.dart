@@ -7,6 +7,7 @@ import '../models/control_log.dart';
 import '../services/auth_service.dart';
 import '../models/threshold_config.dart';
 import 'sqlite_service.dart';
+import '../../viewmodels/analytics_history_viewmodel.dart'; 
 
 class FirestoreService {
   // Singleton Setup
@@ -80,6 +81,7 @@ class FirestoreService {
           );
 
           // Check alerts
+          _checkAlerts(temp, water, ph, light, tds, humidity);
 
           return sensorList;
         });
@@ -193,6 +195,193 @@ class FirestoreService {
     return query.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => ControlLog.fromFirestore(doc)).toList();
     });
+  }
+
+  /// Fetches historical data from Firestore subcollection 'readings'
+  Future<List<Map<String, dynamic>>> fetchHistory(TimeRange range) async {
+    DateTime now = DateTime.now();
+    DateTime startTime;
+
+    switch (range) {
+      case TimeRange.hour:
+        startTime = now.subtract(const Duration(hours: 1));
+        break;
+      case TimeRange.day:
+        startTime = now.subtract(const Duration(days: 1));
+        break;
+      case TimeRange.week:
+        startTime = now.subtract(const Duration(days: 7));
+        break;
+      case TimeRange.month:
+        startTime = now.subtract(const Duration(days: 30));
+        break;
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('devices')
+          .doc(_deviceId)
+          .collection('readings')
+          .where(
+            'timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startTime),
+          )
+          .orderBy('timestamp', descending: false)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        // Convert Timestamp to DateTime string for compatibility
+        if (data['timestamp'] is Timestamp) {
+          data['timestamp'] = (data['timestamp'] as Timestamp)
+              .toDate()
+              .toIso8601String();
+        }
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching history: $e');
+      return [];
+    }
+  }
+
+  // --- Alert Logic ---
+  void _checkAlerts(
+    double temp,
+    double water,
+    double ph,
+    double light,
+    double tds,
+    double humidity,
+  ) {
+    if (_lastNotificationTime != null &&
+        DateTime.now().difference(_lastNotificationTime!).inSeconds < 10) {
+      return;
+    }
+
+    bool alertTriggered = false;
+
+    // 1. Temperature - Check for both high (critical) and low (warning)
+    var tempStatus = ThresholdConfig.instance.checkTemperature(temp);
+    if (tempStatus == AlertStatus.criticalHigh) {
+      _triggerAlert(
+        "🔥 High Temp Alert!",
+        "Temp is ${temp.toStringAsFixed(1)}°C. Cooling needed.",
+        true,
+      );
+      alertTriggered = true;
+    } else if (tempStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "❄️ Low Temp Alert!",
+        "Temp is ${temp.toStringAsFixed(1)}°C. Heating needed.",
+        false,
+      );
+      alertTriggered = true;
+    }
+
+    // 2. Water Level - Critical when low
+    if (!alertTriggered &&
+        ThresholdConfig.instance.checkWaterLevel(water) ==
+            AlertStatus.criticalLow) {
+      _triggerAlert(
+        "💧 Low Water Level!",
+        "Reservoir at ${water.toStringAsFixed(0)}%. Refill now.",
+        true,
+      );
+      alertTriggered = true;
+    }
+
+    // 3. pH Level - Warnings for both high and low
+    if (!alertTriggered) {
+      var phStatus = ThresholdConfig.instance.checkPh(ph);
+      if (phStatus == AlertStatus.warningHigh) {
+        _triggerAlert(
+          "🧪 High pH Alert",
+          "pH is ${ph.toStringAsFixed(1)}. Add pH Down.",
+          false,
+        );
+        alertTriggered = true;
+      } else if (phStatus == AlertStatus.warningLow) {
+        _triggerAlert(
+          "🧪 Low pH Alert",
+          "pH is ${ph.toStringAsFixed(1)}. Add pH Up.",
+          false,
+        );
+        alertTriggered = true;
+      }
+    }
+
+    // 4. TDS - Check for both high (critical) and low (warning)
+    if (!alertTriggered) {
+      var tdsStatus = ThresholdConfig.instance.checkTds(tds);
+      if (tdsStatus == AlertStatus.criticalHigh) {
+        _triggerAlert(
+          "⚠️ High Nutrient Alert",
+          "TDS is ${tds.toStringAsFixed(0)}ppm. Flush system.",
+          true,
+        );
+        alertTriggered = true;
+      } else if (tdsStatus == AlertStatus.warningLow) {
+        _triggerAlert(
+          "⚠️ Low Nutrient Alert",
+          "TDS is ${tds.toStringAsFixed(0)}ppm. Add nutrients.",
+          false,
+        );
+        alertTriggered = true;
+      }
+    }
+
+    // 5. Light - Warning when low
+    if (!alertTriggered &&
+        ThresholdConfig.instance.checkLight(light) == AlertStatus.warningLow) {
+      _triggerAlert(
+        "💡 Low Light Alert",
+        "Light intensity is ${light.toStringAsFixed(0)}%. Check bulbs.",
+        false,
+      );
+      alertTriggered = true;
+    }
+
+    // 6. Humidity - Warnings for both high and low
+    if (!alertTriggered) {
+      var humidityStatus = ThresholdConfig.instance.checkHumidity(humidity);
+      if (humidityStatus == AlertStatus.warningHigh) {
+        _triggerAlert(
+          "💨 High Humidity Alert",
+          "Humidity is ${humidity.toStringAsFixed(0)}%. Increase ventilation.",
+          false,
+        );
+        alertTriggered = true;
+      } else if (humidityStatus == AlertStatus.warningLow) {
+        _triggerAlert(
+          "💨 Low Humidity Alert",
+          "Humidity is ${humidity.toStringAsFixed(0)}%. Increase moisture.",
+          false,
+        );
+        alertTriggered = true;
+      }
+    }
+  }
+
+  void _triggerAlert(String title, String body, bool isCritical) async {
+    // Don't send notifications if no user is logged in
+    if (AuthService.instance.currentUser == null) {
+      debugPrint('⏭️ ALERT: Skipping notification - no user logged in');
+      return;
+    }
+    
+    
+
+    final newAlert = Alert(
+      sensorName: title,
+      message: body,
+      severity: isCritical ? 'critical' : 'warning',
+      timestamp: DateTime.now(),
+    );
+
+    await SqliteService.instance.logAlert(newAlert);
+    _lastNotificationTime = DateTime.now();
+    debugPrint("ALERT SENT: $title");
   }
 
   // --- User Profile Management ---
