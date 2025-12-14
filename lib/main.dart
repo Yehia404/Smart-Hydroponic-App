@@ -23,6 +23,7 @@ import 'utils/virtual_device.dart';
 import 'viewmodels/virtual_device_settings_viewmodel.dart';
 import 'view/screens/splash_screen.dart';
 import 'viewmodels/splash_screen_viewmodel.dart';
+import 'viewmodels/sensor_calibration_viewmodel.dart';
 final VirtualDevice virtualHardware = VirtualDevice();
 
 void main() async {
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => VirtualDeviceSettingsViewModel(virtualHardware),
         ),
+        ChangeNotifierProvider(create: (_) => SensorCalibrationViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

@@ -7,6 +7,7 @@ import '../view/settings/notification_settings_screen.dart';
 import '../view/settings/automation_rules_screen.dart';
 import '../view/settings/user_profile_screen.dart';
 import '../view/settings/virtual_device_settings_screen.dart';
+import '../view/settings/sensor_calibration_screen.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService.instance;
@@ -46,6 +47,15 @@ class SettingsViewModel extends ChangeNotifier {
       context,
       MaterialPageRoute(
         builder: (context) => const VirtualDeviceSettingsScreen(),
+      ),
+    );
+  }
+
+  void openSensorCalibration(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SensorCalibrationScreen(),
       ),
     );
   }

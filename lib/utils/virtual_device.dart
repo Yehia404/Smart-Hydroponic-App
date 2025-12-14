@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'calibration_helper.dart';
 
 /// Simulates the physical hardware (ESP32/Arduino).
 /// It pushes random sensor data to cloud and listens for control commands.
@@ -119,6 +120,14 @@ class VirtualDevice {
     int light = lightMin.toInt() + _random.nextInt((lightMax - lightMin).toInt());
     int tds = tdsMin.toInt() + _random.nextInt((tdsMax - tdsMin).toInt());
     int humidity = humidityMin.toInt() + _random.nextInt((humidityMax - humidityMin).toInt());
+
+    // Apply sensor calibration offsets to simulate real-world sensor adjustments
+    temp = CalibrationHelper.calibrateTemperature(temp);
+    ph = CalibrationHelper.calibratePh(ph);
+    waterLevel = CalibrationHelper.calibrateWaterLevel(waterLevel);
+    light = CalibrationHelper.calibrateLightIntensity(light);
+    tds = CalibrationHelper.calibrateTds(tds);
+    humidity = CalibrationHelper.calibrateHumidity(humidity);
 
     try {
       final data = {

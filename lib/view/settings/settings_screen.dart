@@ -38,6 +38,13 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => viewModel.openSensorThresholds(context),
           ),
           ListTile(
+            leading: const Icon(Icons.build_circle_outlined),
+            title: const Text('Sensor Calibration'),
+            subtitle: const Text('Adjust sensor offset corrections'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => viewModel.openSensorCalibration(context),
+          ),
+          ListTile(
             leading: const Icon(Icons.auto_mode),
             title: const Text('Automation Rules'),
             subtitle: const Text('Configure auto-control logic'),
