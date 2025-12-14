@@ -116,7 +116,8 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
         }
       }
 
-            
+      _calculateStatistics();
+      
     } catch (e) {
       _errorMessage = 'Error loading data: $e';
     } finally {
@@ -124,8 +125,49 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-}
 
+  void _calculateStatistics() {
+    _statistics = {
+      'temperature': _calculateStats(_temperatureData, '°C'),
+      'ph': _calculateStats(_phData, ''),
+      'water_level': _calculateStats(_waterLevelData, '%'),
+      'light_intensity': _calculateStats(_lightIntensityData, '%'),
+      'tds': _calculateStats(_tdsData, 'ppm'),
+      'humidity': _calculateStats(_humidityData, '%'),
+    };
+  }
+
+  SensorStats _calculateStats(List<DataPoint> data, String unit) {
+    if (data.isEmpty) {
+      return SensorStats(
+        min: 0,
+        max: 0,
+        avg: 0,
+        current: 0,
+        trend: 0,
+        unit: unit,
+      );
+    }
+
+    final values = data.map((d) => d.value).toList();
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+    final avg = values.reduce((a, b) => a + b) / values.length;
+    final current = values.last;
+    
+    
+    final trend = current - avg;
+
+    return SensorStats(
+      min: min,
+      max: max,
+      avg: avg,
+      current: current,
+      trend: trend,
+      unit: unit,
+    );
+  }
+}
 
 
 class DataPoint {
