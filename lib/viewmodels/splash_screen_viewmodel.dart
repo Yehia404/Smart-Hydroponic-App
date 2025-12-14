@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../data/services/auth_service.dart';
 
-enum SplashDestination { login, dashboard }
+enum SplashDestination {
+  login,
+  dashboard
+}
 
 class SplashScreenViewModel extends ChangeNotifier {
   final AuthService _authService;

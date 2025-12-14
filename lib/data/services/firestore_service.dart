@@ -7,6 +7,7 @@ import '../models/control_log.dart';
 import '../services/auth_service.dart';
 import '../models/threshold_config.dart';
 import 'sqlite_service.dart';
+import 'notification_service.dart';
 import '../../viewmodels/analytics_history_viewmodel.dart'; 
 
 class FirestoreService {
@@ -426,7 +427,16 @@ class FirestoreService {
       timestamp: DateTime.now(),
     );
 
-    await SqliteService.instance.logAlert(newAlert);
+    int alertId = await SqliteService.instance.logAlert(newAlert);
+    
+    // Trigger actual phone notification
+    await NotificationService.instance.showNotification(
+      id: alertId,
+      title: title,
+      body: body,
+      isCritical: isCritical,
+    );
+    
     _lastNotificationTime = DateTime.now();
     debugPrint("ALERT SENT: $title");
   }
