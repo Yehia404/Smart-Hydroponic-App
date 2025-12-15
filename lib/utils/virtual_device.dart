@@ -147,12 +147,20 @@ class VirtualDevice {
           .set(data, SetOptions(merge: true));
 
       // 2. Add to History (Readings Collection)
-      // FIX: This section was broken in your original file
+      // Use 'timestamp' field for historical queries
       await _firestore
           .collection('devices')
           .doc(_deviceId)
           .collection('readings')
-          .add(data);
+          .add({
+            'temperature': double.parse(temp.toStringAsFixed(1)),
+            'ph': double.parse(ph.toStringAsFixed(1)),
+            'water_level': waterLevel,
+            'light_intensity': light,
+            'tds': tds,
+            'humidity': humidity,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
 
     } catch (e) {
       debugPrint("🔌 VIRTUAL DEVICE: Error sending data: $e");

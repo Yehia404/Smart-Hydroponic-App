@@ -1,32 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-
-enum TimeRange { hour, day, week, month }
-
-class SensorData {
-  final DateTime timestamp;
-  final double value;
-  SensorData(this.timestamp, this.value);
-}
-
-class SensorStats {
-  final double current;
-  final double avg;
-  final double min;
-  final double max;
-  final double trend;
-  final String unit;
-
-  SensorStats({
-    required this.current,
-    required this.avg,
-    required this.min,
-    required this.max,
-    required this.trend,
-    required this.unit,
-  });
-}
+import '../../viewmodels/analytics_history_viewmodel.dart';
 
 class AnalyticsHistoryScreen extends StatefulWidget {
   const AnalyticsHistoryScreen({super.key});
@@ -36,61 +12,20 @@ class AnalyticsHistoryScreen extends StatefulWidget {
 }
 
 class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
-  bool _isLoading = false;
-  String _selectedSensor = 'temperature';
-  TimeRange _selectedRange = TimeRange.day;
-  String? _errorMessage;
-
-  List<SensorData> _getDummyData() {
-    final now = DateTime.now();
-    return List.generate(20, (index) {
-      return SensorData(
-        now.subtract(Duration(hours: 20 - index)),
-        20 + (index * 0.5) + (index % 3),
-      );
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<AnalyticsHistoryViewModel>(context, listen: false);
+      viewModel.setContext(context);
+      viewModel.loadHistoricalData();
     });
-  }
-
-  SensorStats _getDummyStats() {
-    return SensorStats(
-      current: 24.5,
-      avg: 22.0,
-      min: 18.0,
-      max: 28.0,
-      trend: 1.5,
-      unit: '°C',
-    );
-  }
-
-  Future<void> _refreshData() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-  }
-
-  Future<String?> _exportData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // Simulate network/file operation delay
-      await Future.delayed(const Duration(seconds: 2));
-      
-      setState(() => _isLoading = false);
-      return 'Data exported to Downloads/analytics_data.csv';
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to export data: $e';
-      });
-      return null;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<AnalyticsHistoryViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics & History'),
@@ -98,8 +33,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
           IconButton(
             icon: const Icon(Icons.file_download),
             onPressed: () async {
-              final successMessage = await _exportData();
-              
+              final successMessage = await viewModel.exportData();
               if (context.mounted) {
                 if (successMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -114,10 +48,10 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
                       ),
                     ),
                   );
-                } else if (_errorMessage != null) {
+                } else if (viewModel.errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(_errorMessage!),
+                      content: Text(viewModel.errorMessage!),
                       backgroundColor: Colors.red,
                       duration: const Duration(seconds: 5),
                     ),
@@ -129,60 +63,80 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
+            onPressed: viewModel.loadHistoricalData,
             tooltip: 'Refresh Data',
           ),
         ],
       ),
-      body: _isLoading
+      body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildTimeRangeSelector(),
-                const SizedBox(height: 20),
-                _buildSensorSelector(),
-                const SizedBox(height: 20),
-                _buildMainChart(),
-                const SizedBox(height: 30),
-                _buildStatisticsCards(),
-                const SizedBox(height: 30),
-                _buildTrendAnalysis(),
-                const SizedBox(height: 30),
-                _buildHistoricalDataTable(),
-              ],
-            ),
+          : viewModel.errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                      const SizedBox(height: 16),
+                      Text(viewModel.errorMessage!),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: viewModel.loadHistoricalData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: viewModel.loadHistoricalData,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      _buildTimeRangeSelector(viewModel),
+                      const SizedBox(height: 20),
+                      _buildSensorSelector(viewModel),
+                      const SizedBox(height: 20),
+                      _buildMainChart(viewModel),
+                      const SizedBox(height: 30),
+                      _buildStatisticsCards(viewModel),
+                      const SizedBox(height: 30),
+                      _buildTrendAnalysis(viewModel),
+                      const SizedBox(height: 30),
+                      _buildHistoricalDataTable(viewModel),
+                    ],
+                  ),
+                ),
     );
   }
 
-  Widget _buildTimeRangeSelector() {
+  Widget _buildTimeRangeSelector(AnalyticsHistoryViewModel viewModel) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildTimeRangeChip('1H', TimeRange.hour),
-            _buildTimeRangeChip('24H', TimeRange.day),
-            _buildTimeRangeChip('7D', TimeRange.week),
-            _buildTimeRangeChip('30D', TimeRange.month),
+            _buildTimeRangeChip('1H', TimeRange.hour, viewModel),
+            _buildTimeRangeChip('24H', TimeRange.day, viewModel),
+            _buildTimeRangeChip('7D', TimeRange.week, viewModel),
+            _buildTimeRangeChip('30D', TimeRange.month, viewModel),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTimeRangeChip(String label, TimeRange range) {
+  Widget _buildTimeRangeChip(String label, TimeRange range, AnalyticsHistoryViewModel viewModel) {
+    final isSelected = viewModel.selectedRange == range;
     return ChoiceChip(
       label: Text(label),
-      selected: _selectedRange == range,
+      selected: isSelected,
       onSelected: (selected) {
-        if (selected) setState(() => _selectedRange = range);
+        if (selected) viewModel.setTimeRange(range);
       },
     );
   }
 
-  Widget _buildSensorSelector() {
+  Widget _buildSensorSelector(AnalyticsHistoryViewModel viewModel) {
     final sensors = [
       {'id': 'temperature', 'name': 'Temperature', 'icon': Icons.thermostat, 'color': Colors.orange},
       {'id': 'ph', 'name': 'pH Level', 'icon': Icons.science_outlined, 'color': Colors.blue},
@@ -199,7 +153,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
         itemCount: sensors.length,
         itemBuilder: (context, index) {
           final sensor = sensors[index];
-          final isSelected = _selectedSensor == sensor['id'];
+          final isSelected = viewModel.selectedSensor == sensor['id'];
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: FilterChip(
@@ -208,7 +162,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
               selected: isSelected,
               selectedColor: (sensor['color'] as Color).withOpacity(0.3),
               onSelected: (selected) {
-                if (selected) setState(() => _selectedSensor = sensor['id'] as String);
+                if (selected) viewModel.setSelectedSensor(sensor['id'] as String);
               },
             ),
           );
@@ -217,9 +171,8 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  Widget _buildMainChart() {
-    final data = _getDummyData();
-    final sensorInfo = _getSensorInfo(_selectedSensor);
+  Widget _buildMainChart(AnalyticsHistoryViewModel viewModel) {
+    final data = viewModel.getDataForSensor(viewModel.selectedSensor);
     
     if (data.isEmpty) {
       return Card(
@@ -234,6 +187,8 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     final spots = data.asMap().entries.map((entry) {
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
+
+    final sensorInfo = _getSensorInfo(viewModel.selectedSensor);
 
     return Card(
       child: Padding(
@@ -333,8 +288,9 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  Widget _buildStatisticsCards() {
-    final stats = _getDummyStats();
+  Widget _buildStatisticsCards(AnalyticsHistoryViewModel viewModel) {
+    final stats = viewModel.statistics[viewModel.selectedSensor];
+    if (stats == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,8 +349,9 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  Widget _buildTrendAnalysis() {
-    final stats = _getDummyStats();
+  Widget _buildTrendAnalysis(AnalyticsHistoryViewModel viewModel) {
+    final stats = viewModel.statistics[viewModel.selectedSensor];
+    if (stats == null) return const SizedBox.shrink();
 
     final trendDirection = stats.trend > 0 ? 'increasing' : stats.trend < 0 ? 'decreasing' : 'stable';
     final trendIcon = stats.trend > 0 ? Icons.trending_up : stats.trend < 0 ? Icons.trending_down : Icons.trending_flat;
@@ -438,7 +395,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
               ],
             ),
             const Divider(height: 24),
-            _buildTrendInsight(_selectedSensor, stats),
+            _buildTrendInsight(viewModel.selectedSensor, stats),
           ],
         ),
       ),
@@ -541,12 +498,13 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
     );
   }
 
-  Widget _buildHistoricalDataTable() {
-    final data = _getDummyData();
-    final sensorInfo = _getSensorInfo(_selectedSensor);
+  Widget _buildHistoricalDataTable(AnalyticsHistoryViewModel viewModel) {
+    final data = viewModel.getDataForSensor(viewModel.selectedSensor);
+    final sensorInfo = _getSensorInfo(viewModel.selectedSensor);
     
     if (data.isEmpty) return const SizedBox.shrink();
 
+    // Show last 10 data points
     final recentData = data.reversed.take(10).toList();
 
     return Card(

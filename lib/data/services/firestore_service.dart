@@ -265,7 +265,8 @@ class FirestoreService {
     }
 
     try {
-      final querySnapshot = await _firestore
+      // First try with 'timestamp' field (new format)
+      var querySnapshot = await _firestore
           .collection('devices')
           .doc(_deviceId)
           .collection('readings')
@@ -276,11 +277,31 @@ class FirestoreService {
           .orderBy('timestamp', descending: false)
           .get();
 
+      // If no results, try with 'last_updated' field (old format)
+      if (querySnapshot.docs.isEmpty) {
+        debugPrint('No data with timestamp field, trying last_updated...');
+        querySnapshot = await _firestore
+            .collection('devices')
+            .doc(_deviceId)
+            .collection('readings')
+            .where(
+              'last_updated',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startTime),
+            )
+            .orderBy('last_updated', descending: false)
+            .get();
+      }
+
       return querySnapshot.docs.map((doc) {
         final data = doc.data();
         // Convert Timestamp to DateTime string for compatibility
+        // Handle both field names
         if (data['timestamp'] is Timestamp) {
           data['timestamp'] = (data['timestamp'] as Timestamp)
+              .toDate()
+              .toIso8601String();
+        } else if (data['last_updated'] is Timestamp) {
+          data['timestamp'] = (data['last_updated'] as Timestamp)
               .toDate()
               .toIso8601String();
         }
@@ -291,6 +312,7 @@ class FirestoreService {
       return [];
     }
   }
+
 
   // --- Alert Logic ---
   void _checkAlerts(

@@ -1,14 +1,21 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../data/services/firestore_service.dart';
-
+import '../data/models/sensor_data.dart';
 
 class AnalyticsHistoryViewModel extends ChangeNotifier {
   BuildContext? _context;
   bool _isLoading = false;
   String? _errorMessage;
+  StreamSubscription? _sensorStreamSubscription;
   
   // Data storage
   List<DataPoint> _temperatureData = [];
@@ -24,6 +31,20 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
   
   // Statistics
   Map<String, SensorStats> _statistics = {};
+  
+  // Current real-time values (separate from historical data)
+  Map<String, double> _currentValues = {
+    'temperature': 0.0,
+    'ph': 0.0,
+    'water_level': 0.0,
+    'light_intensity': 0.0,
+    'tds': 0.0,
+    'humidity': 0.0,
+  };
+
+  AnalyticsHistoryViewModel() {
+    _startListeningToRealTimeData();
+  }
 
   // Getters
   bool get isLoading => _isLoading;
@@ -62,6 +83,44 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
 
   void setContext(BuildContext context) {
     _context = context;
+  }
+
+  /// Listen to real-time sensor data from the device document
+  void _startListeningToRealTimeData() {
+    _sensorStreamSubscription = FirestoreService.instance.getSensorStream().listen(
+      (sensorDataList) {
+        // Update current values from real-time stream
+        for (var sensor in sensorDataList) {
+          final value = double.tryParse(sensor.value) ?? 0.0;
+          switch (sensor.name.toLowerCase()) {
+            case 'temperature':
+              _currentValues['temperature'] = value;
+              break;
+            case 'ph':
+              _currentValues['ph'] = value;
+              break;
+            case 'water level':
+              _currentValues['water_level'] = value;
+              break;
+            case 'light intensity':
+              _currentValues['light_intensity'] = value;
+              break;
+            case 'tds':
+              _currentValues['tds'] = value;
+              break;
+            case 'humidity':
+              _currentValues['humidity'] = value;
+              break;
+          }
+        }
+        // Recalculate statistics with new current values
+        _calculateStatistics();
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('Error listening to sensor data: $error');
+      },
+    );
   }
 
   Future<void> loadHistoricalData() async {
@@ -121,7 +180,6 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
       }
 
       _calculateStatistics();
-      
     } catch (e) {
       _errorMessage = 'Error loading data: $e';
     } finally {
@@ -130,24 +188,26 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
     }
   }
 
+
   void _calculateStatistics() {
     _statistics = {
-      'temperature': _calculateStats(_temperatureData, '°C'),
-      'ph': _calculateStats(_phData, ''),
-      'water_level': _calculateStats(_waterLevelData, '%'),
-      'light_intensity': _calculateStats(_lightIntensityData, '%'),
-      'tds': _calculateStats(_tdsData, 'ppm'),
-      'humidity': _calculateStats(_humidityData, '%'),
+      'temperature': _calculateStats(_temperatureData, '°C', _currentValues['temperature'] ?? 0),
+      'ph': _calculateStats(_phData, '', _currentValues['ph'] ?? 0),
+      'water_level': _calculateStats(_waterLevelData, '%', _currentValues['water_level'] ?? 0),
+      'light_intensity': _calculateStats(_lightIntensityData, '%', _currentValues['light_intensity'] ?? 0),
+      'tds': _calculateStats(_tdsData, 'ppm', _currentValues['tds'] ?? 0),
+      'humidity': _calculateStats(_humidityData, '%', _currentValues['humidity'] ?? 0),
     };
   }
 
-  SensorStats _calculateStats(List<DataPoint> data, String unit) {
+  SensorStats _calculateStats(List<DataPoint> data, String unit, double currentValue) {
     if (data.isEmpty) {
+      // Even with no historical data, show real-time current value
       return SensorStats(
-        min: 0,
-        max: 0,
-        avg: 0,
-        current: 0,
+        min: currentValue,
+        max: currentValue,
+        avg: currentValue,
+        current: currentValue,
         trend: 0,
         unit: unit,
       );
@@ -157,8 +217,11 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
     final min = values.reduce((a, b) => a < b ? a : b);
     final max = values.reduce((a, b) => a > b ? a : b);
     final avg = values.reduce((a, b) => a + b) / values.length;
-    final current = values.last;
     
+    // Use real-time current value instead of last historical value
+    final current = currentValue > 0 ? currentValue : values.last;
+    
+    // Calculate trend (difference between current and average)
     final trend = current - avg;
 
     return SensorStats(
@@ -179,6 +242,7 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
     if (androidInfo.version.sdkInt >= 33) {
       // On Android 13+ (API 33+), storage permissions are not needed for app-specific directories
       // or public Downloads if using the right APIs.
+      // Permission.storage is always denied on Android 13+.
       return true;
     }
 
@@ -255,9 +319,111 @@ class AnalyticsHistoryViewModel extends ChangeNotifier {
 
     return false;
   }
+
+  Future<String?> exportData() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Request storage permission for Android
+      if (Platform.isAndroid) {
+        final hasPermission = await _requestStoragePermission();
+        if (!hasPermission) {
+          _errorMessage = 'Storage permission denied. Cannot save file.';
+          _isLoading = false;
+          notifyListeners();
+          return null;
+        }
+      }
+
+      // Prepare CSV data
+      List<List<dynamic>> csvData = [
+        ['Timestamp', 'Temperature (°C)', 'pH', 'Water Level (%)', 
+         'Light Intensity (%)', 'TDS (ppm)', 'Humidity (%)']
+      ];
+
+      // Combine all data points by timestamp
+      final allTimestamps = <DateTime>{};
+      for (var point in _temperatureData) allTimestamps.add(point.timestamp);
+      for (var point in _phData) allTimestamps.add(point.timestamp);
+      for (var point in _waterLevelData) allTimestamps.add(point.timestamp);
+      for (var point in _lightIntensityData) allTimestamps.add(point.timestamp);
+      for (var point in _tdsData) allTimestamps.add(point.timestamp);
+      for (var point in _humidityData) allTimestamps.add(point.timestamp);
+
+      final sortedTimestamps = allTimestamps.toList()..sort();
+
+      for (var timestamp in sortedTimestamps) {
+        final dateStr = DateFormat('yyyy-MM-dd HH:mm:ss').format(timestamp);
+        csvData.add([
+          dateStr,
+          _findValueAtTime(_temperatureData, timestamp),
+          _findValueAtTime(_phData, timestamp),
+          _findValueAtTime(_waterLevelData, timestamp),
+          _findValueAtTime(_lightIntensityData, timestamp),
+          _findValueAtTime(_tdsData, timestamp),
+          _findValueAtTime(_humidityData, timestamp),
+        ]);
+      }
+
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      // Save to Downloads folder
+      Directory? directory;
+      String locationMessage;
+      
+      if (Platform.isAndroid) {
+        // Try to save to Downloads directory
+        try {
+          directory = Directory('/storage/emulated/0/Download');
+          if (!await directory.exists()) {
+            directory = Directory('/storage/emulated/0/Downloads');
+          }
+          if (!await directory.exists()) {
+            // Fallback to app-specific external storage (no permission needed)
+            directory = await getExternalStorageDirectory();
+            locationMessage = 'Downloads (App folder)';
+          } else {
+            locationMessage = 'Downloads';
+          }
+        } catch (e) {
+          // If all else fails, use app-specific storage
+          directory = await getExternalStorageDirectory();
+          locationMessage = 'Downloads (App folder)';
+        }
+      } else if (Platform.isIOS) {
+        // On iOS, save to Documents directory (Downloads folder is not accessible)
+        directory = await getApplicationDocumentsDirectory();
+        locationMessage = 'Documents';
+      } else {
+        // Fallback to temporary directory for other platforms
+        directory = await getTemporaryDirectory();
+        locationMessage = 'Temp';
+      }
+
+      final fileName = 'hydroponic_data_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+      final file = File('${directory!.path}/$fileName');
+      await file.writeAsString(csv);
+
+      _isLoading = false;
+      notifyListeners();
+      return 'File saved to $locationMessage folder: $fileName';
+    } catch (e) {
+      _errorMessage = 'Error exporting data: $e';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  String _findValueAtTime(List<DataPoint> data, DateTime timestamp) {
+    final point = data.firstWhere(
+      (p) => p.timestamp == timestamp,
+      orElse: () => DataPoint(timestamp: timestamp, value: 0),
+    );
+    return point.value == 0 ? '' : point.value.toStringAsFixed(2);
+  }
 }
-
-
 
 class DataPoint {
   final DateTime timestamp;
