@@ -208,7 +208,7 @@ class ActuatorHealthMonitor extends ChangeNotifier {
         id: alertId,
         title: '$actuatorName Not Responding',
         body: reason,
-        isCritical: true,
+        severity: 'critical',
       );
 
       debugPrint('📢 Actuator failure notification sent for $actuatorName');
@@ -252,7 +252,7 @@ class ActuatorHealthMonitor extends ChangeNotifier {
         id: alertId,
         title: '$actuatorName Back Online',
         body: '$actuatorName is now responding normally.',
-        isCritical: false,
+        severity: 'info',
       );
 
       debugPrint('✅ Actuator recovery notification sent for $actuator');

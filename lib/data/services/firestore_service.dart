@@ -7,6 +7,8 @@ import '../models/control_log.dart';
 import '../services/auth_service.dart';
 import '../models/threshold_config.dart';
 import 'sqlite_service.dart';
+import 'settings_service.dart';
+import 'notification_service.dart';
 import '../../viewmodels/analytics_history_viewmodel.dart'; 
 
 class FirestoreService {
@@ -323,134 +325,249 @@ class FirestoreService {
     double tds,
     double humidity,
   ) {
+    // Rate limit: only check once every 10 seconds
     if (_lastNotificationTime != null &&
         DateTime.now().difference(_lastNotificationTime!).inSeconds < 10) {
       return;
     }
 
-    bool alertTriggered = false;
+    // Check all sensors for all severity levels
+    // No early return - check ALL sensors, not just the first one with an issue
 
-    // 1. Temperature - Check for both high (critical) and low (warning)
+    // 1. Temperature - Check all severity levels
     var tempStatus = ThresholdConfig.instance.checkTemperature(temp);
     if (tempStatus == AlertStatus.criticalHigh) {
       _triggerAlert(
-        "🔥 High Temp Alert!",
-        "Temp is ${temp.toStringAsFixed(1)}°C. Cooling needed.",
-        true,
+        "🔥 Critical: High Temperature!",
+        "Temperature is ${temp.toStringAsFixed(1)}°C. Immediate cooling needed!",
+        'critical',
       );
-      alertTriggered = true;
+    } else if (tempStatus == AlertStatus.criticalLow) {
+      _triggerAlert(
+        "❄️ Critical: Low Temperature!",
+        "Temperature is ${temp.toStringAsFixed(1)}°C. Immediate heating needed!",
+        'critical',
+      );
+    } else if (tempStatus == AlertStatus.warningHigh) {
+      _triggerAlert(
+        "🔥 Warning: High Temperature",
+        "Temperature is ${temp.toStringAsFixed(1)}°C. Cooling recommended.",
+        'warning',
+      );
     } else if (tempStatus == AlertStatus.warningLow) {
       _triggerAlert(
-        "❄️ Low Temp Alert!",
-        "Temp is ${temp.toStringAsFixed(1)}°C. Heating needed.",
-        false,
+        "❄️ Warning: Low Temperature",
+        "Temperature is ${temp.toStringAsFixed(1)}°C. Heating recommended.",
+        'warning',
       );
-      alertTriggered = true;
-    }
-
-    // 2. Water Level - Critical when low
-    if (!alertTriggered &&
-        ThresholdConfig.instance.checkWaterLevel(water) ==
-            AlertStatus.criticalLow) {
+    } else if (tempStatus == AlertStatus.info) {
       _triggerAlert(
-        "💧 Low Water Level!",
-        "Reservoir at ${water.toStringAsFixed(0)}%. Refill now.",
-        true,
+        "🌡️ Info: Temperature Near Limits",
+        "Temperature is ${temp.toStringAsFixed(1)}°C. Monitor closely.",
+        'info',
       );
-      alertTriggered = true;
     }
 
-    // 3. pH Level - Warnings for both high and low
-    if (!alertTriggered) {
-      var phStatus = ThresholdConfig.instance.checkPh(ph);
-      if (phStatus == AlertStatus.warningHigh) {
-        _triggerAlert(
-          "🧪 High pH Alert",
-          "pH is ${ph.toStringAsFixed(1)}. Add pH Down.",
-          false,
-        );
-        alertTriggered = true;
-      } else if (phStatus == AlertStatus.warningLow) {
-        _triggerAlert(
-          "🧪 Low pH Alert",
-          "pH is ${ph.toStringAsFixed(1)}. Add pH Up.",
-          false,
-        );
-        alertTriggered = true;
-      }
-    }
-
-    // 4. TDS - Check for both high (critical) and low (warning)
-    if (!alertTriggered) {
-      var tdsStatus = ThresholdConfig.instance.checkTds(tds);
-      if (tdsStatus == AlertStatus.criticalHigh) {
-        _triggerAlert(
-          "⚠️ High Nutrient Alert",
-          "TDS is ${tds.toStringAsFixed(0)}ppm. Flush system.",
-          true,
-        );
-        alertTriggered = true;
-      } else if (tdsStatus == AlertStatus.warningLow) {
-        _triggerAlert(
-          "⚠️ Low Nutrient Alert",
-          "TDS is ${tds.toStringAsFixed(0)}ppm. Add nutrients.",
-          false,
-        );
-        alertTriggered = true;
-      }
-    }
-
-    // 5. Light - Warning when low
-    if (!alertTriggered &&
-        ThresholdConfig.instance.checkLight(light) == AlertStatus.warningLow) {
+    // 2. Water Level - Check all severity levels
+    var waterStatus = ThresholdConfig.instance.checkWaterLevel(water);
+    if (waterStatus == AlertStatus.criticalLow) {
       _triggerAlert(
-        "💡 Low Light Alert",
+        "💧 Critical: Very Low Water Level!",
+        "Water level at ${water.toStringAsFixed(0)}%. Refill immediately!",
+        'critical',
+      );
+    } else if (waterStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "💧 Warning: Low Water Level",
+        "Water level at ${water.toStringAsFixed(0)}%. Refill soon.",
+        'warning',
+      );
+    } else if (waterStatus == AlertStatus.info) {
+      _triggerAlert(
+        "💧 Info: Water Level Getting Low",
+        "Water level at ${water.toStringAsFixed(0)}%. Consider refilling.",
+        'info',
+      );
+    }
+
+    // 3. pH Level - Check all severity levels
+    var phStatus = ThresholdConfig.instance.checkPh(ph);
+    if (phStatus == AlertStatus.criticalHigh) {
+      _triggerAlert(
+        "🧪 Critical: Very High pH!",
+        "pH is ${ph.toStringAsFixed(1)}. Add pH Down immediately!",
+        'critical',
+      );
+    } else if (phStatus == AlertStatus.criticalLow) {
+      _triggerAlert(
+        "🧪 Critical: Very Low pH!",
+        "pH is ${ph.toStringAsFixed(1)}. Add pH Up immediately!",
+        'critical',
+      );
+    } else if (phStatus == AlertStatus.warningHigh) {
+      _triggerAlert(
+        "🧪 Warning: High pH",
+        "pH is ${ph.toStringAsFixed(1)}. Add pH Down.",
+        'warning',
+      );
+    } else if (phStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "🧪 Warning: Low pH",
+        "pH is ${ph.toStringAsFixed(1)}. Add pH Up.",
+        'warning',
+      );
+    } else if (phStatus == AlertStatus.info) {
+      _triggerAlert(
+        "🧪 Info: pH Near Limits",
+        "pH is ${ph.toStringAsFixed(1)}. Monitor closely.",
+        'info',
+      );
+    }
+
+    // 4. TDS - Check all severity levels
+    var tdsStatus = ThresholdConfig.instance.checkTds(tds);
+    if (tdsStatus == AlertStatus.criticalHigh) {
+      _triggerAlert(
+        "⚠️ Critical: Very High Nutrients!",
+        "TDS is ${tds.toStringAsFixed(0)}ppm. Flush system immediately!",
+        'critical',
+      );
+    } else if (tdsStatus == AlertStatus.criticalLow) {
+      _triggerAlert(
+        "⚠️ Critical: Very Low Nutrients!",
+        "TDS is ${tds.toStringAsFixed(0)}ppm. Add nutrients immediately!",
+        'critical',
+      );
+    } else if (tdsStatus == AlertStatus.warningHigh) {
+      _triggerAlert(
+        "⚠️ Warning: High Nutrients",
+        "TDS is ${tds.toStringAsFixed(0)}ppm. Consider flushing.",
+        'warning',
+      );
+    } else if (tdsStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "⚠️ Warning: Low Nutrients",
+        "TDS is ${tds.toStringAsFixed(0)}ppm. Add nutrients.",
+        'warning',
+      );
+    } else if (tdsStatus == AlertStatus.info) {
+      _triggerAlert(
+        "⚠️ Info: Nutrients Near Limits",
+        "TDS is ${tds.toStringAsFixed(0)}ppm. Monitor closely.",
+        'info',
+      );
+    }
+
+    // 5. Light - Check all severity levels
+    var lightStatus = ThresholdConfig.instance.checkLight(light);
+    if (lightStatus == AlertStatus.criticalLow) {
+      _triggerAlert(
+        "💡 Critical: Very Low Light!",
+        "Light intensity is ${light.toStringAsFixed(0)}%. Check bulbs immediately!",
+        'critical',
+      );
+    } else if (lightStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "💡 Warning: Low Light",
         "Light intensity is ${light.toStringAsFixed(0)}%. Check bulbs.",
-        false,
+        'warning',
       );
-      alertTriggered = true;
+    } else if (lightStatus == AlertStatus.info) {
+      _triggerAlert(
+        "💡 Info: Light Getting Low",
+        "Light intensity is ${light.toStringAsFixed(0)}%. Monitor bulbs.",
+        'info',
+      );
     }
 
-    // 6. Humidity - Warnings for both high and low
-    if (!alertTriggered) {
-      var humidityStatus = ThresholdConfig.instance.checkHumidity(humidity);
-      if (humidityStatus == AlertStatus.warningHigh) {
-        _triggerAlert(
-          "💨 High Humidity Alert",
-          "Humidity is ${humidity.toStringAsFixed(0)}%. Increase ventilation.",
-          false,
-        );
-        alertTriggered = true;
-      } else if (humidityStatus == AlertStatus.warningLow) {
-        _triggerAlert(
-          "💨 Low Humidity Alert",
-          "Humidity is ${humidity.toStringAsFixed(0)}%. Increase moisture.",
-          false,
-        );
-        alertTriggered = true;
-      }
+    // 6. Humidity - Check all severity levels
+    var humidityStatus = ThresholdConfig.instance.checkHumidity(humidity);
+    if (humidityStatus == AlertStatus.criticalHigh) {
+      _triggerAlert(
+        "💨 Critical: Very High Humidity!",
+        "Humidity is ${humidity.toStringAsFixed(0)}%. Increase ventilation immediately!",
+        'critical',
+      );
+    } else if (humidityStatus == AlertStatus.criticalLow) {
+      _triggerAlert(
+        "💨 Critical: Very Low Humidity!",
+        "Humidity is ${humidity.toStringAsFixed(0)}%. Increase moisture immediately!",
+        'critical',
+      );
+    } else if (humidityStatus == AlertStatus.warningHigh) {
+      _triggerAlert(
+        "💨 Warning: High Humidity",
+        "Humidity is ${humidity.toStringAsFixed(0)}%. Increase ventilation.",
+        'warning',
+      );
+    } else if (humidityStatus == AlertStatus.warningLow) {
+      _triggerAlert(
+        "💨 Warning: Low Humidity",
+        "Humidity is ${humidity.toStringAsFixed(0)}%. Increase moisture.",
+        'warning',
+      );
+    } else if (humidityStatus == AlertStatus.info) {
+      _triggerAlert(
+        "💨 Info: Humidity Near Limits",
+        "Humidity is ${humidity.toStringAsFixed(0)}%. Monitor closely.",
+        'info',
+      );
     }
+
+    // Update last notification time after checking all sensors
+    _lastNotificationTime = DateTime.now();
   }
 
-  void _triggerAlert(String title, String body, bool isCritical) async {
+  void _triggerAlert(String title, String body, String severity) async {
     // Don't send notifications if no user is logged in
     if (AuthService.instance.currentUser == null) {
       debugPrint('⏭️ ALERT: Skipping notification - no user logged in');
       return;
     }
     
+    // Check user notification preferences
+    final settingsService = SettingsService.instance;
+    bool shouldSend = false;
     
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        shouldSend = await settingsService.getNotificationPreference('critical', defaultValue: true);
+        break;
+      case 'warning':
+        shouldSend = await settingsService.getNotificationPreference('warning', defaultValue: true);
+        break;
+      case 'info':
+        shouldSend = await settingsService.getNotificationPreference('info', defaultValue: true);
+        break;
+    }
+    
+    if (!shouldSend) {
+      debugPrint('⏭️ ALERT: User disabled $severity notifications');
+      return;
+    }
 
+    // Create and log alert to database
     final newAlert = Alert(
       sensorName: title,
       message: body,
-      severity: isCritical ? 'critical' : 'warning',
+      severity: severity.toLowerCase(),
       timestamp: DateTime.now(),
     );
 
-    await SqliteService.instance.logAlert(newAlert);
-    _lastNotificationTime = DateTime.now();
-    debugPrint("ALERT SENT: $title");
+    int alertId = await SqliteService.instance.logAlert(newAlert);
+    
+    // Send push notification
+    try {
+      await NotificationService.instance.showNotification(
+        id: alertId,
+        title: title,
+        body: body,
+        severity: severity,
+      );
+      debugPrint("✅ ALERT SENT: $title (Severity: $severity)");
+    } catch (e) {
+      debugPrint("❌ ALERT FAILED: $title - Error: $e");
+    }
   }
 
   // --- User Profile Management ---

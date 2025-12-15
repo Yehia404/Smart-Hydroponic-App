@@ -48,14 +48,23 @@ class NotificationService {
       ledColor: Color(0xFFFF0000),
     );
 
-    // Normal channel
-    const AndroidNotificationChannel normalChannel = AndroidNotificationChannel(
-      'normal_channel',
-      'General Notifications',
-      description: 'General notifications for sensor alerts',
+    // Warning channel
+    const AndroidNotificationChannel warningChannel = AndroidNotificationChannel(
+      'warning_channel',
+      'Warning Alerts',
+      description: 'Warning notifications for sensor alerts',
       importance: Importance.high,
       playSound: true,
       enableVibration: true,
+    );
+
+    // Info channel
+    const AndroidNotificationChannel infoChannel = AndroidNotificationChannel(
+      'info_channel',
+      'Info Notifications',
+      description: 'Informational notifications for sensor alerts',
+      importance: Importance.defaultImportance,
+      playSound: true,
     );
 
     // Create channels
@@ -65,7 +74,11 @@ class NotificationService {
     
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(normalChannel);
+        ?.createNotificationChannel(warningChannel);
+    
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(infoChannel);
   }
 
   // Function to show a notification
@@ -73,16 +86,48 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
-    bool isCritical = false, // Severity flag
+    String severity = 'info', // Severity: 'critical', 'warning', or 'info'
   }) async {
+    // Determine channel and settings based on severity
+    String channelId;
+    String channelName;
+    Importance importance;
+    Priority priority;
+    Color color;
+    
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        channelId = 'critical_channel';
+        channelName = 'Critical Alerts';
+        importance = Importance.max;
+        priority = Priority.high;
+        color = Colors.red;
+        break;
+      case 'warning':
+        channelId = 'warning_channel';
+        channelName = 'Warning Alerts';
+        importance = Importance.high;
+        priority = Priority.defaultPriority;
+        color = Colors.orange;
+        break;
+      case 'info':
+      default:
+        channelId = 'info_channel';
+        channelName = 'Info Notifications';
+        importance = Importance.defaultImportance;
+        priority = Priority.defaultPriority;
+        color = Colors.blue;
+        break;
+    }
+    
     // Define Notification Details
     AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      isCritical ? 'critical_channel' : 'normal_channel',
-      isCritical ? 'Critical Alerts' : 'General Notifications',
+      channelId,
+      channelName,
       channelDescription: 'Notifications for sensor alerts',
-      importance: isCritical ? Importance.max : Importance.high,
-      priority: isCritical ? Priority.high : Priority.defaultPriority,
-      color: isCritical ? Colors.red : Colors.blue,
+      importance: importance,
+      priority: priority,
+      color: color,
       playSound: true,
       icon: '@mipmap/ic_launcher',
     );
