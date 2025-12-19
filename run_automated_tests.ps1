@@ -28,85 +28,56 @@ if (-not (Test-Path $RECORDINGS_DIR)) {
     New-Item -ItemType Directory -Path $RECORDINGS_DIR | Out-Null
 }
 
-# Find ADB dynamically
+# ADB Path Detection Function
 function Find-ADB {
-    # 1. Check if adb is already in PATH
-    $adbInPath = Get-Command "adb" -ErrorAction SilentlyContinue
+    # Check if ADB is already in PATH
+    $adbInPath = Get-Command adb -ErrorAction SilentlyContinue
     if ($adbInPath) {
         return $adbInPath.Source
     }
 
-    # 2. Check ANDROID_HOME environment variable
-    $androidHome = $env:ANDROID_HOME
-    if ($androidHome -and (Test-Path $androidHome)) {
-        $adbPath = Join-Path $androidHome "platform-tools\adb.exe"
-        if (Test-Path $adbPath) {
-            return $adbPath
-        }
-    }
-
-    # 3. Check ANDROID_SDK_ROOT environment variable
-    $androidSdkRoot = $env:ANDROID_SDK_ROOT
-    if ($androidSdkRoot -and (Test-Path $androidSdkRoot)) {
-        $adbPath = Join-Path $androidSdkRoot "platform-tools\adb.exe"
-        if (Test-Path $adbPath) {
-            return $adbPath
-        }
-    }
-
-    # 4. Check common Windows installation paths
-    $commonPaths = @(
+    # Common ADB installation paths
+    $adbPaths = @(
+        # Android Studio SDK (Windows default)
         "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe",
-        "$env:USERPROFILE\AppData\Local\Android\Sdk\platform-tools\adb.exe",
-        "C:\Android\Sdk\platform-tools\adb.exe",
-        "C:\Android\android-sdk\platform-tools\adb.exe",
-        "C:\Program Files\Android\android-sdk\platform-tools\adb.exe",
-        "C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe",
-        "$env:USERPROFILE\Android\Sdk\platform-tools\adb.exe"
+        # Android Studio SDK (alternative location)
+        "$env:APPDATA\Android\Sdk\platform-tools\adb.exe",
+        # User home Android SDK
+        "$env:USERPROFILE\Android\Sdk\platform-tools\adb.exe",
+        # Program Files locations
+        "$env:ProgramFiles\Android\android-sdk\platform-tools\adb.exe",
+        "${env:ProgramFiles(x86)}\Android\android-sdk\platform-tools\adb.exe",
+        # Android Studio bundled SDK
+        "$env:ProgramFiles\Android\Android Studio\sdk\platform-tools\adb.exe",
+        "${env:ProgramFiles(x86)}\Android\Android Studio\sdk\platform-tools\adb.exe",
+        # Standalone SDK installations
+        "C:\Android\sdk\platform-tools\adb.exe",
+        "C:\Android\platform-tools\adb.exe",
+        "C:\android-sdk\platform-tools\adb.exe",
+        # Scoop/Chocolatey installations
+        "$env:USERPROFILE\scoop\apps\android-sdk\current\platform-tools\adb.exe",
+        "C:\tools\android-sdk\platform-tools\adb.exe",
+        # Custom common paths
+        "D:\Android\Sdk\platform-tools\adb.exe",
+        "E:\Android\Sdk\platform-tools\adb.exe"
     )
 
-    foreach ($path in $commonPaths) {
+    foreach ($path in $adbPaths) {
         if (Test-Path $path) {
+            # Add to PATH for this session
+            $platformToolsDir = Split-Path $path -Parent
+            $env:PATH = "$platformToolsDir;$env:PATH"
             return $path
         }
-    }
-
-    # 5. Check Flutter's bundled Android SDK
-    try {
-        $flutterDoctor = flutter doctor -v 2>&1 | Out-String
-        if ($flutterDoctor -match "Android SDK at (.+)") {
-            $sdkPath = $matches[1].Trim()
-            $adbPath = Join-Path $sdkPath "platform-tools\adb.exe"
-            if (Test-Path $adbPath) {
-                return $adbPath
-            }
-        }
-    } catch {
-        # Flutter doctor failed, continue
     }
 
     return $null
 }
 
-# Initialize ADB path
-$global:ADB = Find-ADB
-if ($global:ADB) {
-    Write-Host "ADB found at: $global:ADB" -ForegroundColor Green
-} else {
-    Write-Host "WARNING: ADB not found. Integration tests will be skipped." -ForegroundColor Yellow
-    Write-Host "Please ensure Android SDK is installed and one of the following is set:" -ForegroundColor Yellow
-    Write-Host "  - ANDROID_HOME environment variable" -ForegroundColor Yellow
-    Write-Host "  - ANDROID_SDK_ROOT environment variable" -ForegroundColor Yellow
-    Write-Host "  - ADB in your PATH" -ForegroundColor Yellow
-}
-
-# Helper function to run ADB commands
-function Invoke-ADB {
-    param([string[]]$Arguments)
-    if (-not $global:ADB) {
-        return $null
-    }
-    & $global:ADB @Arguments
+# Try to find ADB
+$adbPath = Find-ADB
+if ($adbPath) {
+    Write-Host "ADB found at: $adbPath" -ForegroundColor Green
 }
 
 # Logging function
@@ -136,11 +107,11 @@ function Start-ScreenRecording {
 
     # Start recording in background
     Start-Job -ScriptBlock {
-        param($adbPath, $device, $file)
-        & $adbPath -s $device shell screenrecord --time-limit 180 $file 2>&1 | Out-Null
-    } -ArgumentList $global:ADB, $DeviceId, $recordingFile -Name "Recording_$TestId" | Out-Null
+        param($device, $file)
+        adb -s $device shell screenrecord --time-limit 180 $file 2>&1 | Out-Null
+    } -ArgumentList $DeviceId, $recordingFile -Name "Recording_$TestId" | Out-Null
 
-    Start-Sleep -Seconds 2  # Wait for recording to start
+    Start-Sleep -Seconds 5  # Wait for recording to start and app to fully launch
     return $recordingFile
 }
 
@@ -161,10 +132,10 @@ function Stop-ScreenRecording {
 
     # Pull recording from device
     $localFile = Join-Path $RECORDINGS_DIR "$TestId.mp4"
-    & $global:ADB -s $DeviceId pull $RemoteFile $localFile 2>&1 | Out-Null
+    adb -s $DeviceId pull $RemoteFile $localFile 2>&1 | Out-Null
 
     # Delete from device
-    & $global:ADB -s $DeviceId shell rm $RemoteFile 2>&1 | Out-Null
+    adb -s $DeviceId shell rm $RemoteFile 2>&1 | Out-Null
 
     if (Test-Path $localFile) {
         Write-Log "Recording saved: $localFile" "SUCCESS"
@@ -228,7 +199,7 @@ function Install-APK {
     Write-Log "Installing APK on device $DeviceId..." "INFO"
     Write-Log "APK: $ApkPath" "INFO"
 
-    $installOutput = & $global:ADB -s $DeviceId install -r $ApkPath 2>&1
+    $installOutput = adb -s $DeviceId install -r $ApkPath 2>&1
     $installOutput | Out-File -Append -FilePath $LOG_FILE
 
     if ($LASTEXITCODE -eq 0) {
@@ -251,7 +222,7 @@ function Launch-App {
     Write-Log "Launching app on device $DeviceId..." "INFO"
 
     # Launch app using monkey
-    & $global:ADB -s $DeviceId shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 2>&1 | Out-Null
+    adb -s $DeviceId shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 2>&1 | Out-Null
     Start-Sleep -Seconds 3
 
     Write-Log "[OK] App launched" "SUCCESS"
@@ -262,9 +233,9 @@ function Get-DeviceInfo {
     param([string]$DeviceId)
 
     try {
-        $manufacturer = (& $global:ADB -s $DeviceId shell getprop ro.product.manufacturer 2>&1).Trim()
-        $model = (& $global:ADB -s $DeviceId shell getprop ro.product.model 2>&1).Trim()
-        $androidVersion = (& $global:ADB -s $DeviceId shell getprop ro.build.version.release 2>&1).Trim()
+        $manufacturer = (adb -s $DeviceId shell getprop ro.product.manufacturer 2>&1).Trim()
+        $model = (adb -s $DeviceId shell getprop ro.product.model 2>&1).Trim()
+        $androidVersion = (adb -s $DeviceId shell getprop ro.build.version.release 2>&1).Trim()
 
         return @{
             Manufacturer = $manufacturer
@@ -304,11 +275,12 @@ try {
     exit 1
 }
 
-# Check ADB (use dynamically found path)
-if ($global:ADB) {
-    Write-Log "[OK] ADB found at: $global:ADB" "SUCCESS"
+# Check ADB
+try {
+    $null = adb version 2>&1
+    Write-Log "[OK] ADB found" "SUCCESS"
     $adbAvailable = $true
-} else {
+} catch {
     Write-Log "[WARNING] ADB not found. Integration tests will be skipped." "WARNING"
     $adbAvailable = $false
 }
@@ -316,7 +288,7 @@ if ($global:ADB) {
 # Check devices
 if ($adbAvailable) {
     Write-Log "Checking for connected Android devices..." "INFO"
-    $devices = & $global:ADB devices 2>&1 | Select-String -Pattern "device$"
+    $devices = adb devices 2>&1 | Select-String -Pattern "device$"
     if ($devices.Count -eq 0) {
         Write-Log "No Android devices connected. Integration tests will be skipped." "WARNING"
     } else {
@@ -503,40 +475,15 @@ if ($TestType -eq 'all' -or $TestType -eq 'integration') {
                         $testId = "integration_$(Split-Path $test -Leaf)"
                         Write-Log "Running $test on device $selectedDevice..." "INFO"
 
-                        # Start background job to continuously grant permissions during test
-                        # This handles flutter test reinstalling the app mid-test
-                        $permissionJob = Start-Job -ScriptBlock {
-                            param($adbPath, $device, $packageName)
-                            $permissions = @(
-                                "android.permission.POST_NOTIFICATIONS",
-                                "android.permission.RECORD_AUDIO"
-                            )
-                            # Keep granting permissions for up to 5 minutes
-                            for ($i = 0; $i -lt 60; $i++) {
-                                foreach ($perm in $permissions) {
-                                    try {
-                                        & $adbPath -s $device shell pm grant $packageName $perm 2>&1 | Out-Null
-                                    } catch { }
-                                }
-                                Start-Sleep -Seconds 5
-                            }
-                        } -ArgumentList $global:ADB, $selectedDevice, "com.example.smart_hydroponic_app" -Name "PermissionGrant_$testId"
-                        
-                        Write-Log "[OK] Permission grant background job started" "SUCCESS"
-
                         # Start screen recording
                         $recordingFile = Start-ScreenRecording -DeviceId $selectedDevice -TestId $testId
 
                         # Clear logcat
-                        & $global:ADB -s $selectedDevice logcat -c 2>&1 | Out-Null
+                        adb -s $selectedDevice logcat -c 2>&1 | Out-Null
 
                         # Run test
                         $output = flutter test $test -d $selectedDevice 2>&1
                         $output | Out-File -Append -FilePath $LOG_FILE
-                        
-                        # Stop permission grant job
-                        Stop-Job -Name "PermissionGrant_$testId" -ErrorAction SilentlyContinue
-                        Remove-Job -Name "PermissionGrant_$testId" -ErrorAction SilentlyContinue
 
                         # Stop recording
                         $videoPath = Stop-ScreenRecording -DeviceId $selectedDevice -TestId $testId -RemoteFile $recordingFile
