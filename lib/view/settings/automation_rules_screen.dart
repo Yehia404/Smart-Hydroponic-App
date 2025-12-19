@@ -141,9 +141,17 @@ class AutomationRulesScreen extends StatelessWidget {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: sensor,
-                items: ['Temperature', 'Humidity', 'Water Level', 'Light']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
+                items:
+                    [
+                          'Temperature',
+                          'Humidity',
+                          'Water Level',
+                          'Light Intensity',
+                          'Ph',
+                          'TDS',
+                        ]
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                 onChanged: (val) => sensor = val!,
                 decoration: const InputDecoration(labelText: 'Sensor'),
               ),
