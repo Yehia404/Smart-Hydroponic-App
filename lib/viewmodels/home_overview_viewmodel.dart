@@ -35,7 +35,7 @@ class HomeOverviewViewModel extends ChangeNotifier {
     if (_cacheService.hasCachedData) {
       final cached = _cacheService.getCachedSensorReadings();
       debugPrint('💾 SENSORS: Loading from cache...');
-      
+
       // Build sensor summary from cached data
       _sensorSummary = [
         {
@@ -77,19 +77,24 @@ class HomeOverviewViewModel extends ChangeNotifier {
 
   void _startListeningToSensors() {
     _sensorStreamSubscription = _firestoreService.getSensorStream().listen(
-          (sensorDataList) async {
+      (sensorDataList) async {
         // Reload rules periodically to catch any changes made in settings
         // This ensures toggled rules are immediately active
         await _loadAutomationRules();
 
         // Take only the first 4 sensors for the dashboard summary
-        _sensorSummary = sensorDataList.take(4).map((sensor) => {
-          'name': sensor.name,
-          'value': sensor.value,
-          'unit': sensor.unit,
-          'icon': sensor.icon,
-          'color': sensor.color,
-        }).toList();
+        _sensorSummary = sensorDataList
+            .take(4)
+            .map(
+              (sensor) => {
+                'name': sensor.name,
+                'value': sensor.value,
+                'unit': sensor.unit,
+                'icon': sensor.icon,
+                'color': sensor.color,
+              },
+            )
+            .toList();
 
         // Cache sensor readings for next app launch
         _cacheSensorData(sensorDataList);
@@ -163,7 +168,9 @@ class HomeOverviewViewModel extends ChangeNotifier {
     for (var rule in _automationRules) {
       // Skip disabled rules
       if (rule['isEnabled'] != 1) {
-        debugPrint('   ⏭️ Skipping disabled rule: ${rule['sensor']} ${rule['condition']} ${rule['threshold']}');
+        debugPrint(
+          '   ⏭️ Skipping disabled rule: ${rule['sensor']} ${rule['condition']} ${rule['threshold']}',
+        );
         continue;
       }
 
@@ -171,9 +178,13 @@ class HomeOverviewViewModel extends ChangeNotifier {
 
       // Rate limiting: Don't execute the same rule more than once per minute
       if (_lastRuleExecution.containsKey(ruleId)) {
-        final timeSinceLastExecution = now.difference(_lastRuleExecution[ruleId]!);
+        final timeSinceLastExecution = now.difference(
+          _lastRuleExecution[ruleId]!,
+        );
         if (timeSinceLastExecution.inSeconds < 60) {
-          debugPrint('   ⏳ Rule $ruleId executed ${timeSinceLastExecution.inSeconds}s ago, skipping (rate limit)');
+          debugPrint(
+            '   ⏳ Rule $ruleId executed ${timeSinceLastExecution.inSeconds}s ago, skipping (rate limit)',
+          );
           continue;
         }
       }
@@ -181,11 +192,19 @@ class HomeOverviewViewModel extends ChangeNotifier {
       // Find the sensor value
       final sensorName = rule['sensor'] as String;
       debugPrint('   🔍 Looking for sensor: "$sensorName"');
-      debugPrint('   📊 Available sensors: ${sensorDataList.map((s) => s.name).join(", ")}');
+      debugPrint(
+        '   📊 Available sensors: ${sensorDataList.map((s) => s.name).join(", ")}',
+      );
 
       final sensorData = sensorDataList.firstWhere(
-            (s) => s.name.toLowerCase() == sensorName.toLowerCase(),
-        orElse: () => SensorData(name: '', value: '0', unit: '', icon: Icons.help, color: Colors.grey),
+        (s) => s.name.toLowerCase() == sensorName.toLowerCase(),
+        orElse: () => SensorData(
+          name: '',
+          value: '0',
+          unit: '',
+          icon: Icons.help,
+          color: Colors.grey,
+        ),
       );
 
       if (sensorData.name.isEmpty) {
@@ -217,6 +236,9 @@ class HomeOverviewViewModel extends ChangeNotifier {
 
         // Update actuator in Firestore
         _firestoreService.updateActuator(actuator, isOn);
+
+        // Log the control action as automated
+        _firestoreService.logControlAction(actuator, isOn, source: 'automated');
 
         // Record execution time
         _lastRuleExecution[ruleId] = now;
