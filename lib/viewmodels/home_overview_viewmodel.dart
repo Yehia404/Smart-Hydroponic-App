@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../data/services/firestore_service.dart';
 import '../data/services/settings_service.dart';
 import '../data/services/local_cache_service.dart';
@@ -9,12 +10,14 @@ class HomeOverviewViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
   final SettingsService _settingsService = SettingsService.instance;
   final LocalCacheService _cacheService = LocalCacheService.instance;
+  final Connectivity _connectivity = Connectivity();
 
-  bool _isSystemOnline = true;
+  bool _isSystemOnline = false; // Start as offline until verified
   String _currentMode = 'automatic';
   List<Map<String, dynamic>> _sensorSummary = [];
   List<Map<String, dynamic>> _automationRules = [];
   StreamSubscription<List<SensorData>>? _sensorStreamSubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // Track last execution time for each rule to avoid rapid re-triggering
   final Map<int, DateTime> _lastRuleExecution = {};
@@ -26,6 +29,7 @@ class HomeOverviewViewModel extends ChangeNotifier {
     _loadAutomationRules();
     _loadCachedSensorData(); // Load cached data first
     _startListeningToSensors();
+    _initConnectivity(); // Initialize connectivity monitoring
   }
 
   List<Map<String, dynamic>> get sensorSummary => _sensorSummary;
@@ -262,9 +266,40 @@ class HomeOverviewViewModel extends ChangeNotifier {
     }
   }
 
+  /// Initialize connectivity monitoring
+  void _initConnectivity() async {
+    // Check initial connectivity status
+    final result = await _connectivity.checkConnectivity();
+    _updateConnectivityStatus(result);
+
+    // Listen for connectivity changes
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
+      List<ConnectivityResult> result,
+    ) {
+      _updateConnectivityStatus(result);
+    });
+  }
+
+  /// Update system online status based on connectivity result
+  void _updateConnectivityStatus(List<ConnectivityResult> result) {
+    final wasOnline = _isSystemOnline;
+
+    // Check if any connection type is available (not none)
+    _isSystemOnline =
+        result.isNotEmpty && !result.contains(ConnectivityResult.none);
+
+    if (wasOnline != _isSystemOnline) {
+      debugPrint(
+        '🌐 Connectivity changed: ${_isSystemOnline ? "ONLINE" : "OFFLINE"}',
+      );
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _sensorStreamSubscription?.cancel();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 }
