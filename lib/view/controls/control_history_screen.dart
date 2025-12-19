@@ -114,13 +114,30 @@ class ControlHistoryScreen extends StatelessWidget {
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [Icon(icon, size: 18), const SizedBox(width: 4), Text(label)],
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.green : Colors.grey[400],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[400],
+            ),
+          ),
+        ],
       ),
       selected: isSelected,
       onSelected: (_) => viewModel.setFilter(value),
-      backgroundColor: Colors.grey[200],
-      selectedColor: Colors.blue[100],
-      checkmarkColor: Colors.blue,
+      backgroundColor: const Color(0xFF2d2d2d),
+      selectedColor: Colors.green.withOpacity(0.3),
+      checkmarkColor: Colors.green,
+      side: BorderSide(
+        color: isSelected ? Colors.green : Colors.grey[700]!,
+        width: 1,
+      ),
     );
   }
 
