@@ -15,6 +15,7 @@ class HomeOverviewViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> _sensorSummary = [];
   List<Map<String, dynamic>> _automationRules = [];
   StreamSubscription<List<SensorData>>? _sensorStreamSubscription;
+  Timer? _connectivityTimer;
 
   // Track last execution time for each rule to avoid rapid re-triggering
   final Map<int, DateTime> _lastRuleExecution = {};
@@ -35,6 +36,9 @@ class HomeOverviewViewModel extends ChangeNotifier {
     if (_cacheService.hasCachedData) {
       final cached = _cacheService.getCachedSensorReadings();
       debugPrint('💾 SENSORS: Loading from cache...');
+
+      // When showing cached data, system is considered offline until we get live data
+      _isSystemOnline = false;
 
       // Build sensor summary from cached data
       _sensorSummary = [
@@ -75,9 +79,34 @@ class HomeOverviewViewModel extends ChangeNotifier {
     _automationRules = await _settingsService.getRules();
   }
 
+  /// Reset the connectivity timer - called when data is received
+  void _resetConnectivityTimer() {
+    _connectivityTimer?.cancel();
+    _connectivityTimer = Timer(const Duration(seconds: 15), () {
+      // No data received for 15 seconds - mark as offline
+      if (_isSystemOnline) {
+        _isSystemOnline = false;
+        debugPrint('🔴 SYSTEM: Offline - no data received for 15 seconds');
+        notifyListeners();
+      }
+    });
+  }
+
   void _startListeningToSensors() {
+    // Start the connectivity timer
+    _resetConnectivityTimer();
+
     _sensorStreamSubscription = _firestoreService.getSensorStream().listen(
       (sensorDataList) async {
+        // Reset connectivity timer - we received data
+        _resetConnectivityTimer();
+
+        // Mark system as online when we receive data from Firestore
+        if (!_isSystemOnline) {
+          _isSystemOnline = true;
+          debugPrint('🟢 SYSTEM: Back online - receiving Firestore data');
+        }
+
         // Reload rules periodically to catch any changes made in settings
         // This ensures toggled rules are immediately active
         await _loadAutomationRules();
@@ -107,7 +136,10 @@ class HomeOverviewViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        print('Error loading sensor data: $error');
+        // Mark system as offline when there's an error (e.g., no internet)
+        _isSystemOnline = false;
+        debugPrint('🔴 SYSTEM: Offline - Firestore error: $error');
+        notifyListeners();
       },
     );
   }
@@ -264,6 +296,7 @@ class HomeOverviewViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _connectivityTimer?.cancel();
     _sensorStreamSubscription?.cancel();
     super.dispose();
   }

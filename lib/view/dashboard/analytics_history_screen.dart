@@ -526,7 +526,7 @@ class _AnalyticsHistoryScreenState extends State<AnalyticsHistoryScreen> {
               },
               children: [
                 TableRow(
-                  decoration: BoxDecoration(color: Colors.grey[200]),
+                  decoration: BoxDecoration(color: Colors.grey[800]),
                   children: [
                     _buildTableCell('Timestamp', isHeader: true),
                     _buildTableCell('Value', isHeader: true),

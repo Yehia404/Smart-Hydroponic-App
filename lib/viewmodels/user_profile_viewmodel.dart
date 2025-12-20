@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,7 @@ import '../view/auth/login_screen.dart';
 
 class UserProfileViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService.instance;
+  StreamSubscription? _authSubscription;
 
   String _userName = 'Loading...';
   String _userEmail = '';
@@ -18,6 +20,24 @@ class UserProfileViewModel extends ChangeNotifier {
 
   UserProfileViewModel() {
     _loadUserProfile();
+    _listenToAuthChanges();
+  }
+
+  /// Listen to auth state changes to reload profile when user changes
+  void _listenToAuthChanges() {
+    _authSubscription = _authService.authStateChanges.listen((user) {
+      debugPrint('🔄 PROFILE: Auth state changed, user: ${user?.uid}');
+      if (user != null) {
+        // New user logged in, reload their profile
+        _loadUserProfile();
+      } else {
+        // User logged out, clear data
+        _userName = 'Loading...';
+        _userEmail = '';
+        _isLoading = false;
+        notifyListeners();
+      }
+    });
   }
 
   /// Loads user profile from Firestore
@@ -135,5 +155,11 @@ class UserProfileViewModel extends ChangeNotifier {
         ).showSnackBar(SnackBar(content: Text('Logout failed: $e')));
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }

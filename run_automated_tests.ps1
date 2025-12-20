@@ -7,10 +7,7 @@ param(
     [string]$TestType = 'all',
 
     [Parameter(Mandatory=$false)]
-    [string]$DeviceId = '',
-
-    [Parameter(Mandatory=$false)]
-    [switch]$Coverage
+    [string]$DeviceId = ''
 )
 
 # Configuration
@@ -290,7 +287,6 @@ Write-Host ""
 
 Write-Log "Test execution started at: $(Get-Date)" "INFO"
 Write-Log "Test type: $TestType" "INFO"
-Write-Log "Coverage enabled: $Coverage" "INFO"
 Write-Log "Log file: $LOG_FILE" "INFO"
 Write-Log "" "INFO"
 
@@ -360,11 +356,7 @@ if ($TestType -eq 'all' -or $TestType -eq 'unit') {
         if (Test-Path $test) {
             Write-Log "Running $test..." "INFO"
 
-            if ($Coverage) {
-                $output = flutter test $test --coverage 2>&1
-            } else {
-                $output = flutter test $test 2>&1
-            }
+            $output = flutter test $test 2>&1
 
             $output | Out-File -Append -FilePath $LOG_FILE
 
@@ -405,11 +397,7 @@ if ($TestType -eq 'all' -or $TestType -eq 'widget') {
         if (Test-Path $test) {
             Write-Log "Running $test..." "INFO"
 
-            if ($Coverage) {
-                $output = flutter test $test --coverage 2>&1
-            } else {
-                $output = flutter test $test 2>&1
-            }
+            $output = flutter test $test 2>&1
 
             $output | Out-File -Append -FilePath $LOG_FILE
 
@@ -715,7 +703,6 @@ $html = @"
             <p><strong>Date:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
             <p><strong>Device:</strong> $deviceDisplay</p>
             <p><strong>Test Type:</strong> $TestType</p>
-            <p><strong>Coverage Enabled:</strong> $Coverage</p>
             <p><strong>Log File:</strong> $LOG_FILE</p>
         </div>
 

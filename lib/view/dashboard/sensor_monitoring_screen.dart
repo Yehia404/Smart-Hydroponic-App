@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/sensor_data.dart';
 import '../../viewmodels/sensor_monitoring_viewmodel.dart';
 import '../../data/models/sensor_calibration.dart';
 
@@ -67,7 +66,37 @@ class SensorMonitoringBody extends StatelessWidget {
 
         return RefreshIndicator(
           onRefresh: viewModel.loadSensorData,
-          child: ListView.builder(
+          child: Column(
+            children: [
+              // Show cached data indicator
+              if (viewModel.isFromCache)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  color: Colors.orangeAccent.withAlpha(51),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.cached, size: 16, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Showing cached data...',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: ListView.builder(
             itemCount: sensors.length,
             itemBuilder: (context, index) {
               final sensor = sensors[index];
@@ -110,7 +139,10 @@ class SensorMonitoringBody extends StatelessWidget {
                   ),
                 ),
               );
-            },
+              },
+            ),
+              ),
+            ],
           ),
         );
       },

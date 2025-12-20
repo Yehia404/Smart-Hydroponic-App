@@ -5,6 +5,7 @@ import 'view/screens/splash_screen.dart';
 import 'firebase_options.dart';                   // 3. Import Generated Options
 import 'data/services/notification_service.dart'; // 4. Import Notification Service
 import 'data/services/task_scheduler_service.dart'; // 5. Import Task Scheduler Service
+import 'data/services/local_cache_service.dart';  // 6. Import Local Cache Service
 import 'viewmodels/splash_screen_viewmodel.dart';
 import 'utils/virtual_device.dart';
 import 'data/services/auth_service.dart';         // Import your Services
@@ -52,6 +53,9 @@ void main() async {
 
   // 5. INITIALIZE THRESHOLDS FROM DATABASE
   await ThresholdConfig.instance.init();
+
+  // 6. INITIALIZE LOCAL CACHE (for offline data)
+  await LocalCacheService.instance.init();
 
   runApp(const MyApp());
 }
