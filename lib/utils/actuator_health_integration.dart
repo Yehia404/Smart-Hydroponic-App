@@ -1,26 +1,10 @@
 import '../data/services/actuator_health_monitor.dart';
 import '../data/models/threshold_config.dart';
 
-/// Example integration of ActuatorHealthMonitor into your app
-/// 
-/// This shows how to call the health checks when you receive sensor data
-/// and know the actuator states. Integrate this logic wherever you process
-/// sensor readings and actuator states together.
 class ActuatorHealthIntegration {
   final ActuatorHealthMonitor _healthMonitor = ActuatorHealthMonitor.instance;
   final ThresholdConfig _thresholds = ThresholdConfig.instance;
 
-  /// Call this method whenever you receive new sensor data and know actuator states
-  /// 
-  /// Example usage in your FirestoreService or wherever you process sensor data:
-  /// ```dart
-  /// void processSensorData(Map<String, dynamic> sensorData, Map<String, dynamic> actuators) {
-  ///   ActuatorHealthIntegration.instance.checkAllActuatorHealth(
-  ///     sensorData: sensorData,
-  ///     actuators: actuators,
-  ///   );
-  /// }
-  /// ```
   void checkAllActuatorHealth({
     required Map<String, dynamic> sensorData,
     required Map<String, dynamic> actuators,
@@ -65,35 +49,3 @@ class ActuatorHealthIntegration {
     return now.hour >= 6 && now.hour < 22;
   }
 }
-
-/// INTEGRATION EXAMPLE for FirestoreService:
-/// 
-/// Add this to your FirestoreService.getSensorStream() method:
-/// 
-/// ```dart
-/// Stream<List<SensorData>> getSensorStream() {
-///   final healthIntegration = ActuatorHealthIntegration();
-///   
-///   return _firestore
-///       .collection('devices')
-///       .doc(_deviceId)
-///       .snapshots()
-///       .map((snapshot) {
-///         if (snapshot.exists && snapshot.data() != null) {
-///           final data = snapshot.data()!;
-///           
-///           // Extract actuator states
-///           final actuators = data['actuators'] as Map<String, dynamic>? ?? {};
-///           
-///           // Check actuator health
-///           healthIntegration.checkAllActuatorHealth(
-///             sensorData: data,
-///             actuators: actuators,
-///           );
-///           
-///           // ... rest of your existing code
-///         }
-///         // ... return sensor data
-///       });
-/// }
-/// ```
