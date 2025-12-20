@@ -54,13 +54,28 @@ function Find-ADB {
     # 4. Check common Windows installation paths
     $commonPaths = @(
         "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe",
-        "$env:USERPROFILE\AppData\Local\Android\Sdk\platform-tools\adb.exe",
-        "C:\Android\Sdk\platform-tools\adb.exe",
-        "C:\Android\android-sdk\platform-tools\adb.exe",
-        "C:\Program Files\Android\android-sdk\platform-tools\adb.exe",
-        "C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe",
-        "$env:USERPROFILE\Android\Sdk\platform-tools\adb.exe"
+        # Android Studio SDK (alternative location)
+        "$env:APPDATA\Android\Sdk\platform-tools\adb.exe",
+        # User home Android SDK
+        "$env:USERPROFILE\Android\Sdk\platform-tools\adb.exe",
+        # Program Files locations
+        "$env:ProgramFiles\Android\android-sdk\platform-tools\adb.exe",
+        "${env:ProgramFiles(x86)}\Android\android-sdk\platform-tools\adb.exe",
+        # Android Studio bundled SDK
+        "$env:ProgramFiles\Android\Android Studio\sdk\platform-tools\adb.exe",
+        "${env:ProgramFiles(x86)}\Android\Android Studio\sdk\platform-tools\adb.exe",
+        # Standalone SDK installations
+        "C:\Android\sdk\platform-tools\adb.exe",
+        "C:\Android\platform-tools\adb.exe",
+        "C:\android-sdk\platform-tools\adb.exe",
+        # Scoop/Chocolatey installations
+        "$env:USERPROFILE\scoop\apps\android-sdk\current\platform-tools\adb.exe",
+        "C:\tools\android-sdk\platform-tools\adb.exe",
+        # Custom common paths
+        "D:\Android\Sdk\platform-tools\adb.exe",
+        "E:\Android\Sdk\platform-tools\adb.exe"
     )
+    
 
     foreach ($path in $commonPaths) {
         if (Test-Path $path) {

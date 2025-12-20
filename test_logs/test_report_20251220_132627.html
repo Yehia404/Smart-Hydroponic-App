@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Report - 20251220_132627</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .info-section {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .info-section p {
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-passed {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-failed {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .video-link {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .video-link:hover {
+            text-decoration: underline;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            gap: 15px;
+        }
+        .summary-box {
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            flex: 1;
+        }
+        .summary-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .summary-box .number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .total-box {
+            background-color: #3498db;
+            color: white;
+        }
+        .passed-box {
+            background-color: #27ae60;
+            color: white;
+        }
+        .failed-box {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge-unit {
+            background-color: #9b59b6;
+            color: white;
+        }
+        .badge-widget {
+            background-color: #16a085;
+            color: white;
+        }
+        .badge-integration {
+            background-color: #e67e22;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Automated Test Report - SMART Hydroponic System</h1>
+
+        <div class="info-section">
+            <h2>Test Environment</h2>
+            <p><strong>Date:</strong> 2025-12-20 13:27:49</p>
+            <p><strong>Device:</strong> No device used</p>
+            <p><strong>Test Type:</strong> all</p>
+            <p><strong>Coverage Enabled:</strong> True</p>
+            <p><strong>Log File:</strong> C:\Users\Ahmed\AndroidStudioProjects\Smart-Hydroponic-App\test_logs\test_run_20251220_132627.log</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-box total-box">
+                <h3>Total Tests</h3>
+                <div class="number">4</div>
+            </div>
+            <div class="summary-box passed-box">
+                <h3>Passed</h3>
+                <div class="number">4</div>
+            </div>
+            <div class="summary-box failed-box">
+                <h3>Failed</h3>
+                <div class="number">0</div>
+            </div>
+        </div>
+
+        <h2>Unit & Widget Tests (4)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Test ID</th>
+                    <th>Test Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>                <tr>
+                    <td>unit_login_viewmodel_test.dart</td>
+                    <td>login_viewmodel</td>
+                    <td><span class="type-badge badge-unit">Unit Test</span></td>
+                    <td class="status-passed">PASSED</td>
+                    <td>2025-12-20 13:27:12</td>
+                </tr>                <tr>
+                    <td>unit_sensor_data_test.dart</td>
+                    <td>sensor_data</td>
+                    <td><span class="type-badge badge-unit">Unit Test</span></td>
+                    <td class="status-passed">PASSED</td>
+                    <td>2025-12-20 13:27:21</td>
+                </tr>                <tr>
+                    <td>unit_virtual_device_test.dart</td>
+                    <td>virtual_device</td>
+                    <td><span class="type-badge badge-unit">Unit Test</span></td>
+                    <td class="status-passed">PASSED</td>
+                    <td>2025-12-20 13:27:31</td>
+                </tr>                <tr>
+                    <td>widget_login_screen_test.dart</td>
+                    <td>login_screen</td>
+                    <td><span class="type-badge badge-widget">Widget Test</span></td>
+                    <td class="status-passed">PASSED</td>
+                    <td>2025-12-20 13:27:48</td>
+                </tr>            </tbody>
+        </table>
+
+        <h2>Integration Tests with Recordings (0)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Test ID</th>
+                    <th>Test Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                    <th>Recording</th>
+                </tr>
+            </thead>
+            <tbody>            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding: 15px; background-color: #ecf0f1; border-radius: 5px;">
+            <h3>Test Files</h3>
+            <ul>
+                <li><strong>Unit Tests:</strong> Located in <code>test/</code> folder</li>
+                <li><strong>Integration Tests:</strong> Located in <code>integration_test/</code> folder</li>
+                <li><strong>Recordings:</strong> Integration test recordings saved in <code>C:\Users\Ahmed\AndroidStudioProjects\Smart-Hydroponic-App\test_logs\recordings</code></li>
+                <li><strong>Logs:</strong> Complete test logs available in log file</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
